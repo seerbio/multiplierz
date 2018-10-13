@@ -212,10 +212,10 @@ def write_mgf(entries, outputName, header = []):
     output = open(outputName, 'w')
 
     if isinstance(entries, dict):
-        entries = entries.values()
+        entries = list(entries.values())
 
     if isinstance(header, dict):
-        header = header.items()
+        header = list(header.items())
 
     for field, value in header:
         output.write("%s=%s\n" % (field, value))
@@ -245,7 +245,7 @@ class MGF_Writer(object):
         self.file = open(outputfile, 'w')
         
         if isinstance(header, dict):
-            header = header.items()
+            header = list(header.items())
         if header:
             for field, value in header:
                 self.file.write("%s=%s\n" % (field, value))
@@ -268,7 +268,7 @@ class MGF_Writer(object):
             elif len(pt) >= 3:
                 self.file.write("%s\t%s\t%s\n" % (pt[0], pt[1], pt[2]))
             else:
-                raise ValueError, "Scan datapoints must have both MZ and intensity!"
+                raise ValueError("Scan datapoints must have both MZ and intensity!")
         
         self.file.write("END IONS\n")
     
@@ -365,23 +365,23 @@ def extract(datafile, outputfile = None, default_charge = 2, centroid = True,
     if not isobaric_labels:
         labels = []
     elif isobaric_labels == 4 or isobaric_labels == '4plex':
-        labels = zip([114, 115, 116, 117], [114.11, 115.11, 116.11, 117.12])
+        labels = list(zip([114, 115, 116, 117], [114.11, 115.11, 116.11, 117.12]))
     elif isobaric_labels == 6 or isobaric_labels == '6plex':
-        labels = zip([126, 127, 128, 129, 130, 131],
-                     [126.127, 127.131, 128.134, 129.138, 130.141, 131.138])
+        labels = list(zip([126, 127, 128, 129, 130, 131],
+                     [126.127, 127.131, 128.134, 129.138, 130.141, 131.138]))
     elif isobaric_labels == 8 or isobaric_labels == '8plex':
-        labels = zip([113, 114, 115, 116, 117, 118, 119, 121],
-                     [113.11, 114.11, 115.11, 116.11, 117.12, 118.12, 119.12, 121.12])
+        labels = list(zip([113, 114, 115, 116, 117, 118, 119, 121],
+                     [113.11, 114.11, 115.11, 116.11, 117.12, 118.12, 119.12, 121.12]))
     elif isobaric_labels == 10 or isobaric_labels == '10plex':
-        labels = zip(['126', '127N', '127C', '128N', '128C', 
+        labels = list(zip(['126', '127N', '127C', '128N', '128C', 
                       '129N', '129C', '130N', '130C', '131'],
                      [126.127726, 127.124761, 127.131081, 128.128116, 128.134436,
-                      129.131471, 129.137790, 130.134825, 130.141145, 131.138180])
+                      129.131471, 129.137790, 130.134825, 130.141145, 131.138180]))
         
         assert label_tolerance < 0.005, ("label_tolerance must be lower "
                                          "than 0.005 for 10-plex experiments! (Currently %s)" % label_tolerance)
     else:
-        raise NotImplementedError, ("Labels of type %s not recognized.\n"
+        raise NotImplementedError("Labels of type %s not recognized.\n"
                                     "Should be one of [4,6,8,10] or None.")
             
     def read_labels(scan):
@@ -429,7 +429,7 @@ def extract(datafile, outputfile = None, default_charge = 2, centroid = True,
                 envelopes = peak_pick(lastMS1, tolerance = 0.01, min_peaks = 2,
                                       enforce_isotopic_ratios=True)[0]
                 return sum([[(x[0][0], c) for x in xs]
-                            for c, xs in envelopes.items()], []), calibrant
+                            for c, xs in list(envelopes.items())], []), calibrant
             
             continue
         elif scanLevel == 'MS3':
@@ -455,7 +455,7 @@ def extract(datafile, outputfile = None, default_charge = 2, centroid = True,
                 # the file, but that can be corrected by external centroiding.
                 scan = centroid_func(data.scan(scanName, centroid = False))
         else:
-            raise NotImplementedError, "Extractor does not handle type %s" % data.format
+            raise NotImplementedError("Extractor does not handle type %s" % data.format)
               
         
             
@@ -551,7 +551,7 @@ def apply_spectral_process(mgfFile, functions, outputFile = None):
     except KeyError:
         header = None
     with MGF_Writer(outputFile, header) as writer:
-        for entry in mgf.values():
+        for entry in list(mgf.values()):
             entry['spectrum'] = applyFunctions(entry['spectrum'])
             writer.write(entry['spectrum'], entry['title'],
                          mass = entry['pepmass'], charge = entry.get('charge', None))

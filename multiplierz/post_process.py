@@ -161,7 +161,7 @@ def combine_accessions(reportfile, outputfile = None):
         
     
     outputData = []
-    for rows in molecules.values():
+    for rows in list(molecules.values()):
         accessions = [x['Accession Number'] for x in rows]
         newRow = max(rows, key = lambda x: x['Peptide Score'])
         
@@ -239,7 +239,7 @@ def fractionation_plot(fractions, outputfile = None, fig_size = None, **kwargs):
         saltcoord = saltCoords[salt]
         if isinstance(psms, int): # Can just pass the count.
             count = psms
-        elif isinstance(psms, basestring): # Else the file
+        elif isinstance(psms, str): # Else the file
             rdr = reader(psms)
             try:
                 count = rdr.get_row_count()
@@ -247,7 +247,7 @@ def fractionation_plot(fractions, outputfile = None, fig_size = None, **kwargs):
                 count = len(list(rdr))
             rdr.close()
         else:
-            raise Exception, "Must specify PSM count or file."
+            raise Exception("Must specify PSM count or file.")
         
         scatterPts.append((orgcoord, saltcoord, count))
         pyt.text(orgcoord, saltcoord, str(count),
@@ -268,15 +268,15 @@ def fractionation_plot(fractions, outputfile = None, fig_size = None, **kwargs):
     #def count_to_size(counts):
         #counts / 
         
-    orgpts, saltpts, counts = zip(*scatterPts)
+    orgpts, saltpts, counts = list(zip(*scatterPts))
     pyt.scatter(orgpts, saltpts, counts,
                 alpha = 0.2,
                 **kwargs)
     
-    orgTicks = [(v, k) for k, v in orgCoords.items()]
-    saltTicks = [(v, k) for k, v in saltCoords.items()]
-    pyt.xticks(*zip(*orgTicks))
-    pyt.yticks(*zip(*saltTicks))
+    orgTicks = [(v, k) for k, v in list(orgCoords.items())]
+    saltTicks = [(v, k) for k, v in list(saltCoords.items())]
+    pyt.xticks(*list(zip(*orgTicks)))
+    pyt.yticks(*list(zip(*saltTicks)))
     pyt.xlabel('Organic')
     pyt.ylabel('Salt')
     
@@ -321,7 +321,7 @@ def multimode_fractionation_plot(mode_fractions, outputfile = None,
         mode_fractions[i] = mode_fractions[i][0], [(float(o), float(s), f) for o, s, f 
                                                    in mode_fractions[i][1]]
     
-    modes = zip(*mode_fractions)[0]
+    modes = list(zip(*mode_fractions))[0]
     organics = sorted(set(sum([list(zip(*x[1])[0]) for x in mode_fractions], [])))
     salts = sorted(set(sum([list(zip(*x[1])[1]) for x in mode_fractions], [])))	
     
@@ -342,8 +342,8 @@ def multimode_fractionation_plot(mode_fractions, outputfile = None,
             grid[orgCoord, saltCoord][mode] = count
             largest = max([largest, count])
     
-    xScale = (max(zip(*grid.keys())[0]) - min(zip(*grid.keys())[0])) / float(len(orgCoords))
-    yScale = (max(zip(*grid.keys())[1]) - min(zip(*grid.keys())[1])) / float(len(saltCoords))
+    xScale = (max(list(zip(*list(grid.keys())))[0]) - min(list(zip(*list(grid.keys())))[0])) / float(len(orgCoords))
+    yScale = (max(list(zip(*list(grid.keys())))[1]) - min(list(zip(*list(grid.keys())))[1])) / float(len(saltCoords))
     overallscale = min([xScale, yScale])    
     
     #def countConvert(count):
@@ -352,7 +352,7 @@ def multimode_fractionation_plot(mode_fractions, outputfile = None,
     
     fig  = pyt.figure()
     ax = fig.gca()
-    for (orgCoord, saltCoord), modecounts in grid.items():
+    for (orgCoord, saltCoord), modecounts in list(grid.items()):
         countForAllModes = [modecounts.get(m, 0) for m in modes]
         total = sum(modecounts.values())
         ax.pie(countForAllModes, center = (orgCoord, saltCoord),

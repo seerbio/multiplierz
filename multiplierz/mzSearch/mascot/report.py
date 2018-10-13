@@ -14,7 +14,7 @@ import multiplierz.mzTools.mz_image as mz_image
 
 
 #import multiplierz.mzSearch.mascot.interface as interface # This should be made more proper!
-import interface
+from . import interface
 import multiplierz.mzReport as mzReport
 
 from multiplierz import myData, myTemp, logger_message
@@ -36,10 +36,10 @@ class MascotReport:
         else:
             self.mascot = interface.mascot()
             self.cleanup = cleanup
-            print "Note: No server specified, Mascot-independent mode."
+            print("Note: No server specified, Mascot-independent mode.")
 
     def login_mascot(self, *args, **kwargs):
-        print "Deprecated function login_mascot called."
+        print("Deprecated function login_mascot called.")
         pass
 
     def mascot_header(self, report_file, mascot_header):
@@ -73,7 +73,7 @@ class MascotReport:
             first_col = []
 
             for line in mascot_header[1:]:
-                if line[0] == ' ' or (isinstance(line[1], (str,unicode))
+                if line[0] == ' ' or (isinstance(line[1], str)
                                       and line[1].startswith('-----')):
                     continue
                 columns[f][line[0]] = line[1]
@@ -167,7 +167,7 @@ class MascotReport:
 
         if dat_file:
             info_gen = interface.mascot_ms2(dat_file)
-            info_gen.next()
+            next(info_gen)
 
         row = (yield None)
 
@@ -394,9 +394,9 @@ class MascotReport:
             report_files = []
 
         if dates:
-            mid_d = zip(mascot_ids, dates, [None]*len(mascot_ids))
+            mid_d = list(zip(mascot_ids, dates, [None]*len(mascot_ids)))
         elif local_dat_files:
-            mid_d = zip(["Local File"]*len(local_dat_files), [None]*len(local_dat_files), local_dat_files)
+            mid_d = list(zip(["Local File"]*len(local_dat_files), [None]*len(local_dat_files), local_dat_files))
         else:
             mid_d = [(mid,None, None) for mid in mascot_ids]
 
@@ -441,7 +441,7 @@ class MascotReport:
                 mascot_dat_file = interface.MascotDatFile(dat_file, **_mascot_options)
 
                 if percolatorDirectory and mascot_dat_file.hasDecoyHits():
-                    print "Running Mascot Percolator..."
+                    print("Running Mascot Percolator...")
                     mascot_dat_file.close()
                     percolatedDatFile = runPercolator(dat_file, percolatorDirectory)
                     mascot_dat_file = interface.MascotDatFile(dat_file, **mascot_options)
@@ -459,8 +459,8 @@ class MascotReport:
 
 
             if self.mascot.version != mascot_dat_file.res_file.getMascotVer()[:len(self.mascot.version)]:
-                print ("Mascot version mismatch detected; changing version from %s to %s" 
-                       % (self.mascot.version, mascot_dat_file.res_file.getMascotVer()[:len(self.mascot.version)]))
+                print(("Mascot version mismatch detected; changing version from %s to %s" 
+                       % (self.mascot.version, mascot_dat_file.res_file.getMascotVer()[:len(self.mascot.version)])))
                 self.mascot.version = mascot_dat_file.res_file.getMascotVer()[:len(self.mascot.version)]
 
             if not combined_file:
@@ -525,18 +525,18 @@ class MascotReport:
                                                  dat_file=(dat_file if _mascot_web_options['mascot_ms2'] else None),
                                                  isMZD=isMZD,
                                                  **gen_options)
-                mascot_web_gen.next()
+                next(mascot_web_gen)
 
             if mascot_prot_cov:
                 prot_cov_gen = self.mascot_prot_coverage(mascot_id,
                                                          _mascot_options['ion_cutoff'],
                                                          date)
-                prot_cov_gen.next()
+                next(prot_cov_gen)
 
             prot_desc_dict = {}
 
             if self.mascot.version != mascot_dat_file.res_file.getMascotVer()[:len(self.mascot.version)]:
-                raise TypeError, "Incorrect version of Mascot selected. %s %s" % (self.mascot.version, mascot_dat_file.res_file.getMascotVer()[:len(self.mascot.version)])
+                raise TypeError("Incorrect version of Mascot selected. %s %s" % (self.mascot.version, mascot_dat_file.res_file.getMascotVer()[:len(self.mascot.version)]))
 
             missing_desc_count = 0
             for row in mascot_dat_file.peptide_report():
@@ -579,7 +579,7 @@ class MascotReport:
 
                 report.write(row, metadata=md)
             if missing_desc_count:
-                print "Missing protein info for %d PSMs." % missing_desc_count
+                print("Missing protein info for %d PSMs." % missing_desc_count)
                 
             if peaks:
                 peak_gen.close()
@@ -674,7 +674,7 @@ class MascotReport:
                 data_sheet.append(row)
             decoy_dat_interface.close()       
         except Exception as err:
-            print "Reading decoy data failed with error: %s" % err
+            print("Reading decoy data failed with error: %s" % err)
         
         if not retain_dat_file:
             os.remove(datfile)
@@ -699,7 +699,7 @@ class MascotReport:
             
         if dates:
             assert len(dates) == len(mascot_ids), "Mismatched date list provided."
-            mascot_searches = zip(mascot_ids, dates)
+            mascot_searches = list(zip(mascot_ids, dates))
         else:
             mascot_searches = [(x, None) for x in mascot_ids]
             
@@ -772,7 +772,7 @@ class MascotReport:
                     output.close()
             else:
                 extension = outputfile.split('.')[-1]
-                print "Omitting header tables due to %s format." % extension
+                print("Omitting header tables due to %s format." % extension)
             
             output = mzReport.writer(outputfile, columns = ['File'] + report_columns,
                                      sheet_name = 'Data')

@@ -37,7 +37,7 @@ def assign_multiprocess(function, data, **pool_args):
                 results.append(done_thing.get())
         while tasks and len(jobs) < process_count:
             newtask = tasks.pop()
-            if isinstance(newtask, basestring) or len(newtask) == 1:
+            if isinstance(newtask, str) or len(newtask) == 1:
                 newtask = (newtask,)
             jobs.append(workforce.apply_async(function, args = newtask))
         sleep(1)
@@ -163,7 +163,7 @@ def typeInDir(directory, ext, recursive = False):
 
 
 def retryTimes(function, times, exceptions):
-    for _ in xrange(times-1):
+    for _ in range(times-1):
         try:
             result = function()
             return result
@@ -245,14 +245,14 @@ class old_ProximityIndexedSequence(object):
         self.rebalance()
 
     def tidyBins(self):
-        print "ProximityIndexedSequence.tidyBins() is deprecated, because it sounds silly."
+        print("ProximityIndexedSequence.tidyBins() is deprecated, because it sounds silly.")
         self.rebalance()
         
     def rebalance(self):
         if not self.bins:
             return
         
-        sequence = sum(self.bins.values(), [])
+        sequence = sum(list(self.bins.values()), [])
         self.bins = {}
         sequence.sort(reverse = True)
         
@@ -294,15 +294,15 @@ class old_ProximityIndexedSequence(object):
         
         el = (self.indexer(value), value)
         try:
-            key = next(x for x in self.bins.keys() if x[0] <= el[0] <= x[1])
+            key = next(x for x in list(self.bins.keys()) if x[0] <= el[0] <= x[1])
             self.bins[key].append(el)
         except StopIteration:
             # Add is often used to iteratively build the list; rebalance()
             # *ought* to be called if things are being used correctly, but
             # its still faster if the bins are made in some reasonable size.
-            maxbinlimit = max([x[1] for x in self.bins.keys()])
-            minbinlimit = min([x[0] for x in self.bins.keys()])
-            binwidth = average([x[1] - x[0] for x in self.bins.keys()])
+            maxbinlimit = max([x[1] for x in list(self.bins.keys())])
+            minbinlimit = min([x[0] for x in list(self.bins.keys())])
+            binwidth = average([x[1] - x[0] for x in list(self.bins.keys())])
             if not binwidth:
                 binwidth = 1
             if el[0] > maxbinlimit:
@@ -320,7 +320,7 @@ class old_ProximityIndexedSequence(object):
                         binwidth *= 2
                     newbin = minbinlimit - binwidth, minbinlimit
             else:
-                raise Exception, "Add new bin error."
+                raise Exception("Add new bin error.")
             
             self.bins[newbin] = [el]
             
@@ -329,7 +329,7 @@ class old_ProximityIndexedSequence(object):
         assert self.dynamic
         
         index = self.indexer(value)
-        key = next(x for x in self.bins.keys() if x[0] <= index <= x[1])
+        key = next(x for x in list(self.bins.keys()) if x[0] <= index <= x[1])
         del self.bins[key][self.bins[key].index((index, value))]
         
         if not self.bins[key]:
@@ -356,22 +356,22 @@ class old_ProximityIndexedSequence(object):
         #try:
             #key = next((x for x in self.bins.keys() if x[0] <= index <= x[1]))
         #except StopIteration:
-        key = min(self.bins.keys(), key = lambda x: min(abs(x[0] - index), abs(x[1] - index)))
+        key = min(list(self.bins.keys()), key = lambda x: min(abs(x[0] - index), abs(x[1] - index)))
 
         return min(self.bins[key], key = lambda x: abs(x[0] - index))[1]
     
     def asList(self):
-        return [x[1] for x in sum(self.bins.values(), [])]
+        return [x[1] for x in sum(list(self.bins.values()), [])]
     
     def __iter__(self):
-        for key in self.bins.keys():
+        for key in list(self.bins.keys()):
             for index, thing in self.bins[key]:
                 yield thing
                 
     def returnRange(self, begin, stop):
         #raise NotImplementedError, "This has to be fixed!"
         #keys = [k for k in self.bins.keys() if begin <= k[0] <= stop or begin <= k[1] <= stop]
-        keys = [k for k in self.bins.keys() 
+        keys = [k for k in list(self.bins.keys()) 
                 if (k[0] >= begin and k[1] <= stop) # Key range is within given range.
                 or (k[0] <= begin and k[1] >= stop) # Given range is within key range.
                 or (begin <= k[1] and stop >= k[1]) # Given range overlaps end of key range.
@@ -404,7 +404,7 @@ class NaiveProximitySequence(object):
         del self.sequence[self.sequence.index([x for x in self.sequence if x[0] == index][0])]
         
     def asList(self):
-        return zip(*self.sequence)[1]
+        return list(zip(*self.sequence))[1]
     
     
     
@@ -421,7 +421,7 @@ def collectByCriterion(data, criterion, splitby = None):
     output = defaultdict(list)
     for datum in data:
         key = criterion(datum)
-        if isinstance(key, basestring):
+        if isinstance(key, str):
             key = key.strip()
         if splitby:
             keys = key.split(splitby)
@@ -440,14 +440,14 @@ def centroid(scan):
     Centroids profile-mode data given in [(M/Z, intensity)] format.
     """
     
-    threshold = average(zip(*scan)[1])
+    threshold = average(list(zip(*scan))[1])
     peaks = []
     peak = []
     for pt in scan:
         if pt[1] > threshold:
             peak.append(pt)
         elif peak:
-            centroid = average(zip(*peak)[0], weights = zip(*peak)[1]), max(zip(*peak)[1])
+            centroid = average(list(zip(*peak))[0], weights = list(zip(*peak))[1]), max(list(zip(*peak))[1])
             peaks.append(centroid)
             peak = []
     return peaks
@@ -489,7 +489,7 @@ def peak_pick(scan, tolerance = 0.005, max_charge = 8, min_peaks = 3, correction
 
     if len(scan) > 10000:
         if all([(scan[i+1][0] - scan[i][0]) < 0.3 for i in range(0, 100)]):
-            raise NotImplementedError, "Called scan_features on a profile-mode spectrum."
+            raise NotImplementedError("Called scan_features on a profile-mode spectrum.")
 
     if enforce_isotopic_ratios:
         global isotopicRatios
@@ -517,7 +517,7 @@ def peak_pick(scan, tolerance = 0.005, max_charge = 8, min_peaks = 3, correction
         # the expected ratio with the previous intensity in the sequence, it
         # is added to that sequence and the algorithm proceeds to the next
         # point.
-        for chg, chargeSet in activeSets.items():
+        for chg, chargeSet in list(activeSets.items()):
             # Chargeset is ordered by MZ, by construction, so only the first
             # (within-range) expected-point has to be checked.
             
@@ -563,7 +563,7 @@ def peak_pick(scan, tolerance = 0.005, max_charge = 8, min_peaks = 3, correction
         # since their charge is indeterminate, so there's multiple possible-next-MZs.
         # If a point matches to an active point, they're put together in a new 
         # isotopic sequence.
-        for actPt in sorted(activePts.keys(), key = lambda x: x[1], reverse = True):
+        for actPt in sorted(list(activePts.keys()), key = lambda x: x[1], reverse = True):
             if actPt[0] + 1 + tolerance < pmz:
                 del activePts[actPt]
                 unassigned.append(actPt)
@@ -595,14 +595,14 @@ def peak_pick(scan, tolerance = 0.005, max_charge = 8, min_peaks = 3, correction
     
     
     newCorrection = []
-    for charge, things in activeSets.items():
+    for charge, things in list(activeSets.items()):
         for thing in things:
             if len(thing['envelope']) >= min_peaks:
                 envelopes[charge].append(thing['envelope'])
             else:
                 unassigned += thing['envelope']            
                 
-    unassigned += activePts.keys()
+    unassigned += list(activePts.keys())
     
 
 
@@ -611,7 +611,7 @@ def peak_pick(scan, tolerance = 0.005, max_charge = 8, min_peaks = 3, correction
     if cleanup:
         unProx = ProximityIndexedSequenceAgain(unassigned, indexer = lambda x: x[0],
                                                dynamic = False)        
-        for charge, chgEnvelopes in envelopes.items():
+        for charge, chgEnvelopes in list(envelopes.items()):
             increment = 1.0/charge
             for envelope in chgEnvelopes:
                 first = min(envelope)
@@ -653,7 +653,7 @@ def peak_pick_PPM(scan, tolerance = 10, max_charge = 8, min_peaks = 3, correctio
 
     if len(scan) > 10000:
         if all([(scan[i+1][0] - scan[i][0]) < 0.3 for i in range(0, 100)]):
-            raise NotImplementedError, "Called scan_features on a profile-mode spectrum."
+            raise NotImplementedError("Called scan_features on a profile-mode spectrum.")
 
     if enforce_isotopic_ratios:
         global isotopicRatios
@@ -681,7 +681,7 @@ def peak_pick_PPM(scan, tolerance = 10, max_charge = 8, min_peaks = 3, correctio
         # the expected ratio with the previous intensity in the sequence, it
         # is added to that sequence and the algorithm proceeds to the next
         # point.
-        for chg, chargeSet in activeSets.items():
+        for chg, chargeSet in list(activeSets.items()):
             # Chargeset is ordered by MZ, by construction, so only the first
             # (within-range) expected-point has to be checked.
             
@@ -730,7 +730,7 @@ def peak_pick_PPM(scan, tolerance = 10, max_charge = 8, min_peaks = 3, correctio
         # since their charge is indeterminate, so there's multiple possible-next-MZs.
         # If a point matches to an active point, they're put together in a new 
         # isotopic sequence.
-        for actPt in sorted(activePts.keys(), key = lambda x: x[1], reverse = True):
+        for actPt in sorted(list(activePts.keys()), key = lambda x: x[1], reverse = True):
             #if actPt[0] + 1 + tolerance < pmz:
             if actPt[0] + 1 < pmz and not inPPM(tolerance, actPt[0] + 1, pmz):
                 del activePts[actPt]
@@ -764,14 +764,14 @@ def peak_pick_PPM(scan, tolerance = 10, max_charge = 8, min_peaks = 3, correctio
     
     
     newCorrection = []
-    for charge, things in activeSets.items():
+    for charge, things in list(activeSets.items()):
         for thing in things:
             if len(thing['envelope']) >= min_peaks:
                 envelopes[charge].append(thing['envelope'])
             else:
                 unassigned += thing['envelope']            
                 
-    unassigned += activePts.keys()
+    unassigned += list(activePts.keys())
     
 
 
@@ -856,17 +856,17 @@ def deisochart(envelopes, unassigned):
     seed(1)
     
     def lines(thing, charge = None, **etc):
-        pyt.vlines(zip(*thing)[0], [0]*len(thing), zip(*thing)[1], **etc)
+        pyt.vlines(list(zip(*thing))[0], [0]*len(thing), list(zip(*thing))[1], **etc)
         if charge:
             for pt in thing:
                 pyt.text(pt[0], pt[1], str(charge))
     
     lines(unassigned, color = 'b')
-    length = len(sum(envelopes.values(), []))
+    length = len(sum(list(envelopes.values()), []))
     colors = pyt.cm.Set1([x/float(length) for x in range(0, length)])
     shuffle(colors)
     i = 0
-    for chg, chgEnvs in envelopes.items():
+    for chg, chgEnvs in list(envelopes.items()):
         for env in chgEnvs:
             label = "%s(%s)" % (i, chg)
             lines(env, charge = label, color = colors[i], linewidth = 3)
@@ -883,18 +883,18 @@ def deisocompare(envelopes1, unassigned1, envelopes2, unassigned2):
     seed(1)
     
     def lines(thing, charge = None, upness = 1, **etc):
-        pyt.vlines(zip(*thing)[0], [0]*len(thing), 
+        pyt.vlines(list(zip(*thing))[0], [0]*len(thing), 
                    [x*upness for x in zip(*thing)[1]], **etc)
         if charge:
             for pt in thing:
                 pyt.text(pt[0], upness * pt[1], str(charge))
     
     lines(unassigned1, color = 'b')
-    length = len(sum(envelopes1.values(), []))
+    length = len(sum(list(envelopes1.values()), []))
     colors = pyt.cm.Set1([x/float(length) for x in range(0, length)])
     shuffle(colors)
     i = 0
-    for chg, chgEnvs in envelopes1.items():
+    for chg, chgEnvs in list(envelopes1.items()):
         for env in chgEnvs:
             label = "%s(%s)" % (i, chg)
             lines(env, charge = label, color = colors[i], linewidth = 3)
@@ -902,11 +902,11 @@ def deisocompare(envelopes1, unassigned1, envelopes2, unassigned2):
             
             
     lines(unassigned2, upness = -1, color = 'b')
-    length = len(sum(envelopes2.values(), []))
+    length = len(sum(list(envelopes2.values()), []))
     colors = pyt.cm.Set1([x/float(length) for x in range(0, length)])
     shuffle(colors)
     i = 0
-    for chg, chgEnvs in envelopes2.items():
+    for chg, chgEnvs in list(envelopes2.items()):
         for env in chgEnvs:
             label = "%s(%s)" % (i, chg)
             lines(env, charge = label, upness = -1, color = colors[i], linewidth = 3)
@@ -949,7 +949,7 @@ if __name__ == '__main__':
         assert oldver[indexer(x)] == newver[indexer(x)]    
     #assert oldver.asList() == newver.asList()
     
-    print "Done!"
+    print("Done!")
         
         
         

@@ -31,7 +31,7 @@ __author__ = 'Jignesh Parikh, James Webber, William Max Alexander'
 
 __all__ = ['mzFile']
 
-import cPickle
+import pickle
 import os
 import re
 import sys
@@ -98,7 +98,7 @@ def make_info_file(data_file, **kwargs):
         os.remove(data_file + '.mzi')
 
     if file_type == 'mzml':
-        import mzML
+        from . import mzML
         mzML.make_info_file(data_file)
     else:
         my_file = mzFile(data_file, **kwargs)
@@ -114,7 +114,7 @@ def make_info_file(data_file, **kwargs):
 
         # pickle object
         with open(data_file + '.mzi', 'w') as f:
-            cPickle.dump(info_list, f)
+            pickle.dump(info_list, f)
 
 
 class mzInfoFile(tuple):
@@ -133,7 +133,7 @@ class mzInfoFile(tuple):
         Assumes all dictionaries have same keys.
         """
 
-        return self[0].keys()
+        return list(self[0].keys())
 
     def sort_by_field(self, field=None):
         if field:
@@ -221,24 +221,24 @@ class mzFile(object):
         bitness = platform.architecture()[0]
         if bitness != '64bit':
             if '32bit' in bitness:
-                raise Exception, "mzAPI does not support 32-bit Python!"
+                raise Exception("mzAPI does not support 32-bit Python!")
             else:
-                print ("WARNING- System architecture string %s not "
-                      "recognized.  Is this 64-bit Windows Python?") % bitness
+                print(("WARNING- System architecture string %s not "
+                      "recognized.  Is this 64-bit Windows Python?") % bitness)
         
         #if data_file.lower().endswith('.lnk') or os.path.islink(data_file):
             #data_file = follow_link(data_file)
 
         if not (data_file.lower().startswith('http://') or os.path.exists(data_file)):
-            raise IOError, "%s not found!" % data_file
+            raise IOError("%s not found!" % data_file)
 
         if data_file.lower().startswith('http://'):
-            import mzURL
+            from . import mzURL
             self.__class__ = mzURL.mzFile
             self.format = 'mzserver'
             mzURL.mzFile.__init__(self, data_file, **kwargs)
         elif data_file.lower().endswith('.wiff'):
-            import mzWiff
+            from . import mzWiff
             self.format = 'wiff'
             if kwargs.get('implicit_mode', False) == True:
                 self.__class__ = mzWiff.mzFile_implicit_numbering
@@ -256,31 +256,31 @@ class mzFile(object):
                 
             #mzWiff.mzFile.__init__(self, data_file, **kwargs)
         elif data_file.lower().endswith('.raw'):
-            import raw
+            from . import raw
             self.__class__ = raw.mzFile
             self.format = 'raw'
             raw.mzFile.__init__(self, data_file, **kwargs)
         elif (data_file.lower().endswith('.mzml') or
               data_file.lower().endswith('.mzml.gz') or
               data_file.lower().endswith('.mzmlsql')):
-            import mzML
+            from . import mzML
             self.__class__ = mzML.mzFile
             self.format = 'mzml'
             mzML.mzFile.__init__(self, data_file, **kwargs)
         elif data_file.lower().endswith('.d'):
             #assert sys.maxsize <= 2**32, "Agilent files are not currently supported in 64-bit Python."
             
-            import D
+            from . import D
             self.__class__ = D.mzFile
             self.format = 'd'
             D.mzFile.__init__(self, data_file, **kwargs)
         elif data_file.lower().endswith('.t2d'):
-            import mzT2D
+            from . import mzT2D
             self.__class__ = mzT2D.mzFile
             self.format = 't2d'
             mzT2D.mzFile.__init__(self, data_file, **kwargs)
         else:
-            raise NotImplementedError, "Can't open %s; extension not recognized." % data_file
+            raise NotImplementedError("Can't open %s; extension not recognized." % data_file)
         
         
         

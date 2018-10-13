@@ -13,7 +13,7 @@ class mzFile(mzAPImzFile):
         try:
             self.source = CreateObject("{10729396-43ee-49e5-aa07-85f02292ac70}")
         except WindowsError as err:
-            print "RawReader.dll not found in registry."
+            print("RawReader.dll not found in registry.")
             raise err
         self.source.OpenRawFile(file_name)
         
@@ -42,7 +42,7 @@ class mzFile(mzAPImzFile):
     def lscan(self, scan_number):
         scan = self.source.centroid_scan(scan_number)
         if len(scan[0]) < 4:
-            raise IOError, "Full lscan data not available for scan %s" % scan_number
+            raise IOError("Full lscan data not available for scan %s" % scan_number)
         return [x[:4] for x in scan]
     
     def rscan(self, scan):
@@ -53,8 +53,8 @@ class mzFile(mzAPImzFile):
     
     def filters(self):
         if not self._filters:
-            filterlist = zip(self.source.GetAllFilterInfoTimes(),
-                             self.source.GetAllFilterInfo())
+            filterlist = list(zip(self.source.GetAllFilterInfoTimes(),
+                             self.source.GetAllFilterInfo()))
             self._filters = [(time, string) for time, string in filterlist
                              if time and string]
             
@@ -71,14 +71,14 @@ class mzFile(mzAPImzFile):
         return info
     
     def scanInjectionTime(self, scan):
-        keys, vals = zip(*self.source.get_extra_scan_info(scan))
+        keys, vals = list(zip(*self.source.get_extra_scan_info(scan)))
         try:
             return float(vals[keys.index('Ion Injection Time (ms):')])
         except ValueError:
             return float(vals[keys.index('Ion Injection Time (ms):')].replace(',', ''))
     
     def scanPrecursor(self, scan):
-        keys, vals = zip(*self.source.get_extra_scan_info(scan))
+        keys, vals = list(zip(*self.source.get_extra_scan_info(scan)))
         return (float(vals[keys.index('Monoisotopic M/Z:')]),
                 float(vals[keys.index('Charge State:')]))
         
@@ -129,7 +129,7 @@ class mzFile(mzAPImzFile):
 
     
     def centroid(self, scan, *foo, **bar):
-        print "mzFile.centroid is deprecated, use mzFile.scan(..., centroid = True) instead."
+        print("mzFile.centroid is deprecated, use mzFile.scan(..., centroid = True) instead.")
         return self.scan(scan, centroid = True)
     
 

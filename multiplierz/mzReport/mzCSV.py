@@ -33,7 +33,7 @@ class CSVReportReader(ReportReader):
         self.file_name = file_name
         self.fh = open(self.file_name, 'rb')
         self.csv = csv.reader(self.fh)
-        self.columns = self.csv.next()
+        self.columns = next(self.csv)
         
         if len(self.columns) == 1 and '\t' in self.columns[0]:
             # Retry with tab-delimiting dialect
@@ -47,7 +47,7 @@ class CSVReportReader(ReportReader):
 
     def __iter__(self):
         self.fh.seek(0) # start at beginning of the file
-        self.csv.next() # ignore headers
+        next(self.csv) # ignore headers
         for row in self.csv:
             # will convert default column values to correct type
             yield ReportEntry(columns=self.columns, values=row)
@@ -67,9 +67,9 @@ class CSVReportWriter(ReportWriter):
             self.columns = columns
 
         for i, col in enumerate(self.columns):
-            if not all(map(lambda x: ord(x) < 128, col)):
+            if not all([ord(x) < 128 for x in col]):
                 newcol = ''.join([x for x in col if ord(x) < 128])
-                print "WARNING: %s has non-utf-8 characters; changing to %s" % (col, newcol)
+                print("WARNING: %s has non-utf-8 characters; changing to %s" % (col, newcol))
                 self.columns[i] = newcol
 
         if len(self.columns) > len(set(c.lower() for c in self.columns)):
@@ -89,7 +89,7 @@ class CSVReportWriter(ReportWriter):
         elif len(row) > len(self.columns):
             raise ValueError('Too many values')
         elif isinstance(row,dict):
-            row = dict((k.lower(),v) for k,v in row.items())
+            row = dict((k.lower(),v) for k,v in list(row.items()))
             if not all(k.lower() in row for k in self.columns):
                 raise ValueError('Value dictionary does not match column headers')
 

@@ -1,6 +1,6 @@
 import sqlite3
 import base64
-import cPickle as pickle
+import pickle as pickle
 
 
 def marshal(data):
@@ -63,12 +63,12 @@ class UnimodDatabase(object):
         elif mass == 'average':
             command = """SELECT avg_delta FROM mods WHERE name = '%s' OR full_name = '%s'""" % (mod_name, mod_name)
         else:
-            raise ValueError, "Mass type must be 'monoisotopic' or 'average'."
+            raise ValueError("Mass type must be 'monoisotopic' or 'average'.")
         self.cur.execute(command)
         try:
             return self.cur.fetchall()[0][0]
         except IndexError:
-            raise ValueError, "%s not found in Unimod database." % mod_name
+            raise ValueError("%s not found in Unimod database." % mod_name)
     
     def get_mod_specificities(self, mod_name):
         command = """SELECT spec FROM mods WHERE name = '%s' OR full_name = '%s'""" % (mod_name, mod_name)
@@ -76,7 +76,7 @@ class UnimodDatabase(object):
         try:
             spec = self.cur.fetchall()[0][0]
         except IndexError:
-            raise ValueError, "%s not found in Unimod database." % mod_name
+            raise ValueError("%s not found in Unimod database." % mod_name)
         
         return demarshal(spec)
     
@@ -88,7 +88,7 @@ class UnimodDatabase(object):
         elif mass == 'average':
             command = """SELECT avg_n_loss FROM modsites WHERE name = '%s' OR full_name = '%s'""" % (mod_name, mod_name)
         else:
-            raise ValueError, "Mass type must be 'monoisotopic' or 'average'."            
+            raise ValueError("Mass type must be 'monoisotopic' or 'average'.")            
         self.cur.execute(command)
         return demarshal(self.cur.fetchall()[0][0])
     
@@ -116,7 +116,7 @@ class UnimodDatabase(object):
         specmoddata = self.cur.fetchall()
         specmodsets = collectByCriterion(specmoddata, lambda x: (x[0], x[2]))
         modnames = []
-        for specmodset in specmodsets.values():
+        for specmodset in list(specmodsets.values()):
             modname = specmodset[0][0]
             sites = ''.join(sorted(set(zip(*specmodset)[1])))
             modnames.append('%s (%s)' % (modname, sites))
@@ -129,7 +129,7 @@ class UnimodDatabase(object):
         specmoddata = self.cur.fetchall()
         specmodsets = collectByCriterion(specmoddata, lambda x: (x[0], x[2]))
         lookup = {}
-        for specmodset in specmodsets.values():
+        for specmodset in list(specmodsets.values()):
             modname = specmodset[0][0]
             delta = self.get_mod_delta(modname)
             sites = sorted(set(zip(*specmodset)[1]))

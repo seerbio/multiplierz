@@ -4,7 +4,7 @@ from collections import defaultdict
 from multiplierz.internalAlgorithms import ProximityIndexedSequence
 from multiplierz import vprint
 
-import cPickle as pickle
+import pickle as pickle
 import sqlite3
 import os
 import base64
@@ -100,7 +100,7 @@ heavyR = "Label:13C(6)15N(4)"
 def featureToPSM(resultFile, featureData, groupSILAC = False):
     results = reader(resultFile)
     if 'Feature' not in results.columns:
-        raise IOError, "Not a feature-annotated file!"
+        raise IOError("Not a feature-annotated file!")
     
     featureToPSMs = defaultdict(list)
     if groupSILAC:
@@ -148,7 +148,7 @@ def save_feature_database(features, outputfile, overwrite = False):
         if overwrite:
             os.remove(outputfile)
         else:
-            raise IOError, "Target file %s already exists!" % outputfile
+            raise IOError("Target file %s already exists!" % outputfile)
     
     conn = sqlite3.connect(outputfile)
     cur = conn.cursor()
@@ -255,7 +255,7 @@ class FeatureInterface(object):
         
     
     def scan_range(self, start_scan, end_scan):
-        raise NotImplementedError, "Haven't bothered to work out the query logic yet, sorry."
+        raise NotImplementedError("Haven't bothered to work out the query logic yet, sorry.")
         #assert self.mode == 'sql', 'Requires SQLite mode!'
         
         #command = "SELECT ind, data FROM features WHERE startscan >= %s OR endscan >= %s" % (start_scan, end_scan)

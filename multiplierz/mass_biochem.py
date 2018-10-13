@@ -21,16 +21,17 @@ import os
 import re
 
 from random import randint, sample
+from functools import reduce
 try:
     from collections import defaultdict, Counter
 except ImportError:
     from collections import defaultdict
-    print "Some functions may not currently work in Python 2.6."
+    print("Some functions may not currently work in Python 2.6.")
     
 from itertools import permutations
 
 from multiplierz import myData, logger_message, protonMass
-from unimod import UnimodDatabase
+from .unimod import UnimodDatabase
 
 
 
@@ -250,7 +251,7 @@ formula_form = re.compile('([A-Z][0-9]*)*$')
 def sum_formula(formulas):
     totals = defaultdict(int)
     for form in formulas:
-        for atom, count in form.items():
+        for atom, count in list(form.items()):
             totals[atom] += count
     return totals
 
@@ -288,7 +289,7 @@ def parse_chemical_formula(formstring):
 
 chemicalMassMemo = {}
 def chemicalFormulaMass(formula):    
-    assert isinstance(formula, basestring)
+    assert isinstance(formula, str)
     
     if formula in chemicalMassMemo:
         return chemicalMassMemo[formula]        
@@ -303,7 +304,7 @@ def chemicalFormulaMass(formula):
 def chemicalDataMass(formula):
     assert isinstance(formula, dict)
     mass = 0
-    for element, count in formula.items():
+    for element, count in list(formula.items()):
         mass += AW[element] * count
     return mass
 
@@ -472,7 +473,7 @@ def fragment_legacy(peptide, ions=('b', 'b++', 'y', 'y++'), labels=True):
     double = polarity * 2
 
     # amino acid masses
-    masses = dict([(k, v[0]) for k, v in AminoAcidMasses.items()])
+    masses = dict([(k, v[0]) for k, v in list(AminoAcidMasses.items())])
     masses['-'] = 0.0
     masses['C-term'] = 17.00274
     masses['N-term'] = 1.007825
@@ -866,14 +867,14 @@ def peptide_mass(peptide, modifications = None, use_monoisotopic = True):
     
     if not modifications: # Due to that odd Python default-argument quirk.
         modifications = []
-    elif isinstance(modifications, basestring):
+    elif isinstance(modifications, str):
         modifications = [x.strip() for x in modifications.split(';')]
     else:
         modifications = list(modifications)
         
     pepFormula = defaultdict(int)
     for aa in peptide:
-        for el, num in AminoAcidFormulas[aa].items():
+        for el, num in list(AminoAcidFormulas[aa].items()):
             pepFormula[el] += num
     
     aaChainLinks = len(peptide) - 1
@@ -886,16 +887,16 @@ def peptide_mass(peptide, modifications = None, use_monoisotopic = True):
     for mod in modifications:
         if mod in SpecialModifications: # Mod as entry in SpecialModifications
             modOps.append(SpecialModifications[mod])
-        elif isinstance(mod, basestring) and mascotVarModPattern.match(mod):
+        elif isinstance(mod, str) and mascotVarModPattern.match(mod):
             # Mod as Mascot variable mod substring.
             # Presumably this is being given once per modification, e.g.
             # 'S1: Phospho; S12: Phospho'.
             submod = mod.split()[1]
             assert submod in ModificationFormulae, ("Could not recognize variable "
                                                     "modfication %s" % mod)
-            for atom, num in ModificationFormulae[submod].items():
+            for atom, num in list(ModificationFormulae[submod].items()):
                 modFormula[atom] += num
-        elif isinstance(mod, basestring) and mascotFixModPattern.match(mod):
+        elif isinstance(mod, str) and mascotFixModPattern.match(mod):
             # Mod as Mascot fixed mod substring.
             # This is taken as being given once for however many instances
             # of the site may be present (which may be none.)
@@ -907,13 +908,13 @@ def peptide_mass(peptide, modifications = None, use_monoisotopic = True):
             for site in sites:
                 instances += peptide.count(site)
             if instances:
-                for atom, num in ModificationFormulae[submod].items():
+                for atom, num in list(ModificationFormulae[submod].items()):
                     modFormula[atom] += num * instances
         elif mod in ModificationFormulae:
             # Mod as plain mod name.
-            for atom, num in ModificationFormulae[mod].items():
+            for atom, num in list(ModificationFormulae[mod].items()):
                 modFormula[atom] += num
-        elif isinstance(mod, basestring) and formula_form.match(mod):
+        elif isinstance(mod, str) and formula_form.match(mod):
             # Mod as written-out chemical formula.
             moddict = parse_chemical_formula(mod)
             for atom, num in moddict:
@@ -930,7 +931,7 @@ def peptide_mass(peptide, modifications = None, use_monoisotopic = True):
                 # Mod as mass but in string format.
                 specialMass += float(mod)
             except ValueError:
-                raise IOError, "Unrecognized modification type: %s" % str(mod)
+                raise IOError("Unrecognized modification type: %s" % str(mod))
     
     
     for op in modOps:
@@ -981,11 +982,11 @@ def fragment(peptide, mods = [], charges = [1],
    
 
     massType = 0 if use_monoisotopic else 1
-    aminoMasses = dict((aa,AminoAcidMasses[aa][massType]) for aa in AminoAcidMasses.keys())
+    aminoMasses = dict((aa,AminoAcidMasses[aa][massType]) for aa in list(AminoAcidMasses.keys()))
     aminoMasses.update(special_AAs)
     
-    for key, value in neutralLossDynamics.items():
-        if isinstance(key, basestring):
+    for key, value in list(neutralLossDynamics.items()):
+        if isinstance(key, str):
             neutralLossDynamics[mod_masses[key]] = value
     
     #assert not neutralPhosLoss, "Not currently set up for phos loss!"
@@ -997,7 +998,7 @@ def fragment(peptide, mods = [], charges = [1],
     cterminusMass = H2Omass
     
     modBySite = defaultdict(list)
-    if isinstance(mods, basestring):
+    if isinstance(mods, str):
         mods = mods.split('; ')
     for modstr in [x for x in mods if x]:
         if ':' in modstr:
@@ -1125,7 +1126,7 @@ def fragment(peptide, mods = [], charges = [1],
     
     # Water-loss duplicates of ALL ions!
     if waterLoss:
-        for fragtype, labelions in chargedFragmentSets.items():
+        for fragtype, labelions in list(chargedFragmentSets.items()):
             waterlosses = []
             for label, ion in labelions:
                 newlabel = list(label)
@@ -1587,7 +1588,7 @@ def mz_pep_decode_new(peptide):
                 modset.add('Specified Mass %.2f' % modstr)
                 modmass += float(modstr)
             else:
-                raise NotImplementedError, "Unimod lookup is disabled in this version."
+                raise NotImplementedError("Unimod lookup is disabled in this version.")
         modsets[loc+1] = modset
         modmasses[loc+1] = modmass
     for i in range(1, len(peptide)+1):
@@ -1603,7 +1604,7 @@ def mz_pep_decode_new(peptide):
 def formulaForMass(mass, tolerance, components = ('C', 'H', 'N', 'O', 'P', 'S')):
     assert all(c in AW for c in components), "Not all component masses available."
     
-    return map(dict, iter_formulaForMass(mass, tolerance, list(components)))
+    return list(map(dict, iter_formulaForMass(mass, tolerance, list(components))))
 
 def iter_formulaForMass(mass, tolerance, components):
     if mass < tolerance:
@@ -1648,7 +1649,7 @@ def peptideForMass(mass, length, tolerance, pieces = None,
     """    
     
     if not pieces:
-        pieces = [(k, m) for k, (m, _) in AminoAcidMasses.items()]
+        pieces = [(k, m) for k, (m, _) in list(AminoAcidMasses.items())]
     
     if add_H2O:
         mass -= H2Omass
@@ -1660,7 +1661,7 @@ def peptideForMass(mass, length, tolerance, pieces = None,
         
     strResults = []
     for count, mass in results:
-        resstr = ''.join(sum([[x * n] for x, n in count.items()], []))
+        resstr = ''.join(sum([[x * n] for x, n in list(count.items())], []))
         if unique_sets:
             strResults.append((resstr, mass))
         else:

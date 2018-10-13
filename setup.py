@@ -9,7 +9,7 @@ if 'windows' in platform.platform().lower():
     install_requires = ['numpy', 'comtypes', 'matplotlib', 'pypiwin32',
                           'openpyxl', 'xlrd', 'xlwt', 'requests'], # Removed 'lxml'.
 else:
-    print "Preparing Linux mode installation."
+    print("Preparing Linux mode installation.")
     install_requires = ['numpy', 'comtypes', 'matplotlib',
                         'openpyxl', 'xlrd', 'xlwt', 'requests']
 

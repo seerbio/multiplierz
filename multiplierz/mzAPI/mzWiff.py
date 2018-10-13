@@ -67,12 +67,12 @@ class mzFile_implicit_numbering(mzAPImzFile):
 
         scans_present = [(c, e) for c, e, s in zip(*self.data.scan_info())[2] if s == self.sample]
         self.make_explicit = dict(enumerate(scans_present))
-        self.make_implicit = dict((y, x) for x, y in self.make_explicit.items())
+        self.make_implicit = dict((y, x) for x, y in list(self.make_explicit.items()))
         
     def scan(self, scan, **kwargs):
         if isinstance(scan, float):
             if scan != int(scan):
-                raise RuntimeError, ("Scan time specification is ambiguous "
+                raise RuntimeError("Scan time specification is ambiguous "
                                      "with implicit experiment numbering; use "
                                      "explicit_numbering mode mzFile.")
             else:
@@ -170,7 +170,7 @@ class mzFile_explicit_numbering(mzAPImzFile):
             #raise err        
     
         if not os.path.exists(data_file + '.scan'):
-            raise IOError, "%s.scan not found!" % data_file
+            raise IOError("%s.scan not found!" % data_file)
     
         self.source.OpenWiffFile(os.path.abspath(data_file))
         
@@ -219,9 +219,9 @@ class mzFile_explicit_numbering(mzAPImzFile):
         elif isinstance(scan_name, float):
             cycle = self.scan_for_time(scan_name, experiment, sample)
         else:
-            raise NotImplementedError, "scan_name must be float or int."
+            raise NotImplementedError("scan_name must be float or int.")
      
-        scan = zip(*self.source.GetSpectrumIndex(sample-1, experiment-1, cycle-1))
+        scan = list(zip(*self.source.GetSpectrumIndex(sample-1, experiment-1, cycle-1)))
         if centroid:
             scan = centroid_func(scan)
         return scan
@@ -256,7 +256,7 @@ class mzFile_explicit_numbering(mzAPImzFile):
         if experiment:
             expCounts = {sample-1 : [experiment]}
         else:
-            expCounts = dict([(x, range(0, self.source.GetExperiments(x))) for x in samples])
+            expCounts = dict([(x, list(range(0, self.source.GetExperiments(x)))) for x in samples])
         
         scaninfo = []
         cycleInfo = {}
@@ -319,12 +319,12 @@ class mzFile_explicit_numbering(mzAPImzFile):
         Experiment is by default 1 (the experiment of MS1 scans.)
         """
         if filter and filter.strip().lower() not in ['full ms', 'full ms2']:
-            raise NotImplementedError, "Filter strings are not compatible with WIFF files. %s" % filter
+            raise NotImplementedError("Filter strings are not compatible with WIFF files. %s" % filter)
         
         if not sample:
             sample = self.sample
         
-        xic = zip(*self.source.XicByExp(sample-1, experiment-1, float(start_mz), float(stop_mz)))
+        xic = list(zip(*self.source.XicByExp(sample-1, experiment-1, float(start_mz), float(stop_mz))))
         return [x for x in xic if start_time <= x[0] <= stop_time]
     
     def tic(self, start_time = None, stop_time = None, sample = None, experiment = None):
@@ -336,7 +336,7 @@ class mzFile_explicit_numbering(mzAPImzFile):
         if not sample:
             sample = self.sample
             
-        tic = zip(*self.source.TicByExp(sample-1, 0))
+        tic = list(zip(*self.source.TicByExp(sample-1, 0)))
         if start_time:
             tic = [x for x in tic if x[0] >= start_time]
         if stop_time:
@@ -404,7 +404,7 @@ class mzFile_explicit_numbering(mzAPImzFile):
         self._filters = []
         for rt, mz, (cycle, exp, sample), level, mode in self.scan_info():
             try:
-                mzrange = map(int, expInfo[sample-1, exp-1][1:3]) # ...Perhaps?
+                mzrange = list(map(int, expInfo[sample-1, exp-1][1:3])) # ...Perhaps?
             except ValueError:
                 assert expInfo[sample-1, exp-1][1] == 'MRM' and expInfo[sample-1, exp-1][1] == 'MRM'
                 mzrange = 0, 0
@@ -415,7 +415,7 @@ class mzFile_explicit_numbering(mzAPImzFile):
                 levelstr = 'ms2'
                 locstr = '%.2f@00.00 ' % mz
             else:
-                raise Exception, level
+                raise Exception(level)
             
             detector = expInfo[sample-1, exp-1][3]
             
@@ -441,7 +441,7 @@ class mzFile_explicit_numbering(mzAPImzFile):
         values = self.source.GetMRMInfo(self.sample-1, 0)
         keys = ['ExperimentType', 'SpectrumType', 'RawDataType',
                 'Polarity', 'IDAType', 'SourceType', 'NumberOfScans']
-        return dict(zip(keys, values))
+        return dict(list(zip(keys, values)))
     
     def MRM_channels(self):
         return list(self.source.GetMRMChannels(self.sample-1, 0))

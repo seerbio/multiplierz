@@ -1,4 +1,4 @@
-from mascot import interface, report
+from .mascot import interface, report
 from multiplierz.settings import settings
 from multiplierz import myData
 from datetime import datetime
@@ -28,10 +28,10 @@ class MascotSearch(object):
                 if '=' in line:
                     words = [x.strip() for x in line.split('=')]
                     if len(words) != 2:
-                        print "Warning- ignoring parse error on line: %s" % line
+                        print("Warning- ignoring parse error on line: %s" % line)
                     else:
                         if words[0] in self.values:
-                            raise IOError, ("Duplicated field: %s" % words[0])
+                            raise IOError("Duplicated field: %s" % words[0])
                         self.fields.append(words[0])
                         self.values[words[0]] = bestType(words[1])
     
@@ -46,7 +46,7 @@ class MascotSearch(object):
             for field in self.fields:
                 output.write('%s=%s\n' % (field, self.values[field]))
             
-            for field in [x for x in self.values.keys() if x not in self.fields]:
+            for field in [x for x in list(self.values.keys()) if x not in self.fields]:
                 output.write('%s=%s\n' % (field, self.values[field]))
     
     
@@ -67,7 +67,7 @@ class MascotSearch(object):
             from multiplierz.mgf import extract
             expected_charge = self.values['CHARGE']
             if len(expected_charge) > 3 or not int(expected_charge.strip('+-')):
-                raise RuntimeError, "%s is not a valid default charge value for extraction to MGF." % expected_charge
+                raise RuntimeError("%s is not a valid default charge value for extraction to MGF." % expected_charge)
             self.values['FILE'] = extract(self.values['FILE'],
                                           default_charge = int(expected_charge.strip('+-')))
             
@@ -83,7 +83,7 @@ class MascotSearch(object):
             search.login(user, password)
         dat_id, error = search.search(self.values)
         if error:
-            raise Exception, error
+            raise Exception(error)
         assert dat_id, "No dat_id; no error raised. %s" % error
         
         if ':' in dat_id:
@@ -104,7 +104,7 @@ class MascotSearch(object):
                                                show_sub_set = bestType(self.values['show_sub_set']) != 0,
                                                rank_one = bestType(self.values['rank_one']) != 0,
                                                bold_red = bestType(self.values['bold_red']) != 0)      
-        if not isinstance(resultfile, basestring):
+        if not isinstance(resultfile, str):
             assert len(resultfile) == 1, "Invalid result count: %s" % len(resultfile) # retrieveMascotReport can do multiple at a time; this doesn't.
             resultfile = resultfile[0]
         assert os.path.exists(resultfile), "Result file not present: %s" % resultfile
@@ -204,13 +204,13 @@ def retrieveMascotReport(mascot_ids = None,
     peptide match.
     """
     import sys
-    if max_hits > sys.maxint:
-        print "Warning: max_hits must be of type int (for msparser.)"
-        print "Reducing max_hits from %s to maximum int size (%s) ." % (max_hits, sys.maxint)
-        max_hits = sys.maxint
+    if max_hits > sys.maxsize:
+        print("Warning: max_hits must be of type int (for msparser.)")
+        print("Reducing max_hits from %s to maximum int size (%s) ." % (max_hits, sys.maxsize))
+        max_hits = sys.maxsize
 
     if mascot_ids and dat_file_list:
-        raise NotImplementedError, ("Reports from server-located and local "
+        raise NotImplementedError("Reports from server-located and local "
                                     "searches must be processed separately.")
 
 
@@ -246,9 +246,9 @@ def retrieveMascotReport(mascot_ids = None,
     # combined by sheets.
     ret_vals = []
     if dates and any(dates):
-        report_vals = zip(mascot_ids, dates)
+        report_vals = list(zip(mascot_ids, dates))
     else:
-        report_vals = zip(mascot_ids, [None]*len(mascot_ids))
+        report_vals = list(zip(mascot_ids, [None]*len(mascot_ids)))
     for mascot_id, date in report_vals:
         ret_vals.append(mascot_reporter.get_reports(mascot_ids = [mascot_id],
                                                     dates = [date],

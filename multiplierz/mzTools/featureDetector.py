@@ -4,7 +4,7 @@ from collections import defaultdict, deque
 import time
 import multiplierz.mzReport as mzReport
 import os
-import cPickle as pickle
+import pickle as pickle
 import re
 from multiplierz.internalAlgorithms import ProximityIndexedSequence, inPPM, average, pts_to_bins
 from multiplierz import vprint, verbose_mode
@@ -111,13 +111,13 @@ class Feature():
         return [(r[0], r[1][0][1]) for r in sorted(self.regions)]
     # Previous version didn't have absolute-scan-index conversion on regions.
     def calculate_bounds(self, absolute_scan_lookup):
-        regionIndices = zip(*self.regions)[0]
+        regionIndices = list(zip(*self.regions))[0]
         self.scans = [absolute_scan_lookup[x] for x in regionIndices]
         self.scanrange = min(self.scans), max(self.scans)
         
         self.regions = [(absolute_scan_lookup[x], y) for x, y in self.regions]
         
-        minMZs = [min(zip(*peaks)[0]) for y, peaks in self.regions]
+        minMZs = [min(list(zip(*peaks))[0]) for y, peaks in self.regions]
         avgC12 = average(minMZs)
         while not all([abs(x - avgC12) < 0.05 for x in minMZs]):
             oddOneOut = max(minMZs, key = lambda x: abs(x - avgC12))
@@ -216,7 +216,7 @@ def getAcqPoints(datafile, resultFile):
         elif scan[3] == 'MS2':
             ms2s.append(scan[2])
         else:
-            raise Exception, "Unidentified scan type of %s" % scan[3]
+            raise Exception("Unidentified scan type of %s" % scan[3])
     for ms2 in ms2s:
         ms2toms1[ms2] = ms1
         
@@ -249,7 +249,7 @@ def binByFullFeature(datafile, featureDB, results):
             if ms1 != None:
                 ms2s.append(scan[2])
         else:
-            raise Exception, "Unidentified scan type of %s" % scan[3]
+            raise Exception("Unidentified scan type of %s" % scan[3])
     for ms2 in ms2s:
         ms2toms1[ms2] = ms1   
            
@@ -296,7 +296,7 @@ def binByFullFeature(datafile, featureDB, results):
         
     groupedResults = []
     overFitCount = 0
-    for feature, results in featureItems.items():
+    for feature, results in list(featureItems.items()):
         try:
             pep = results[0][0]['Peptide Sequence']
             if not all([x['Peptide Sequence'] == pep for x, s, i, k, sk in results]):
@@ -318,7 +318,7 @@ def binByFullFeature(datafile, featureDB, results):
             result['feature kurtosis'] = kurtosis
             result['feature skewness'] = skew
             groupedResults.append(result)
-    for feature, resultEdges in edgeItems.items():
+    for feature, resultEdges in list(edgeItems.items()):
         for result, edge, scans, intensity, kurtosis, skew in resultEdges:
             result['Feature'] = '-'
             result['feature error'] = str(feature) + " " + edge
@@ -414,8 +414,8 @@ def feature_analysis(datafile, resultFiles,
     
     outputfiles = []
     if resultFiles:
-        print resultFiles
-        print "Categorizing search results by file."
+        print(resultFiles)
+        print("Categorizing search results by file.")
         for resultfile in resultFiles:
             resultfile = os.path.abspath(resultfile)
             inputResults = mzReport.reader(resultfile)
@@ -441,9 +441,9 @@ def feature_analysis(datafile, resultFiles,
             
             output.close()
             
-            print "Output saved to %s ." % outputfile
+            print("Output saved to %s ." % outputfile)
     else:
-        print "No PSM data given; skipping annotation step."
+        print("No PSM data given; skipping annotation step.")
         
     return featureFile, outputfiles
 
@@ -461,9 +461,9 @@ def dataReaderProc(datafile, que, scanNumbers):
         data.close()
     except Exception as err:
         import traceback
-        print "READ THREAD ERROR."
+        print("READ THREAD ERROR.")
         traceback.print_exc()
-        print '------------------'
+        print('------------------')
         raise err
 
     
@@ -495,7 +495,7 @@ def detect_features(datafile, **constants):
         global tolerance
         tolerance = constants['tolerance']
         if tolerance < 1:
-            print "\n\n\nWARNING- tolerance value for SILAC analysis should now be in PPM!\n\n\n"
+            print("\n\n\nWARNING- tolerance value for SILAC analysis should now be in PPM!\n\n\n")
     else:
         tolerance = 10
         
@@ -563,7 +563,7 @@ def detect_features(datafile, **constants):
         thing = que.get(block = True)
         
         if verbose_mode and len(isotopeData) % 100 == 0:
-            print len(isotopeData) # Shielded by explicit verbose_mode check.
+            print(len(isotopeData)) # Shielded by explicit verbose_mode check.
     
     reader.join()
     # Could just discard the un-feature'd peaks immediately.
@@ -582,15 +582,15 @@ def detect_features(datafile, **constants):
     allIsotopes = []
     for scanNum, isotopesByCharge in isotopeData:
         scanIndex = ms1ToIndex[scanNum]
-        for charge, isotopes in isotopesByCharge.items():
+        for charge, isotopes in list(isotopesByCharge.items()):
             for isoSeq in isotopes:
                 isotopesByChargePoint[charge][scanIndex].add(isoSeq)
                 allIsotopes.append((isoSeq, scanIndex, charge))
     
     del isotopeData
 
-    for scanlookup in isotopesByChargePoint.values():
-        for proxseq in scanlookup.values():
+    for scanlookup in list(isotopesByChargePoint.values()):
+        for proxseq in list(scanlookup.values()):
             proxseq.rebalance()
             
 

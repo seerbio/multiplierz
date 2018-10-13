@@ -264,7 +264,7 @@ def make_ms2_im(save_file, scan, scan_mode, peptide, labels=None, ion_list=('b',
     out = open(save_file + '.txt', mode = 'w')
     for m in a:
         for ion in m[2]:
-            print >> out,  ion, ':\t', m[0:2]
+            print(ion, ':\t', m[0:2], file=out)
     out.close()
 
     
@@ -562,7 +562,7 @@ def _make_xic(fig, mz, xic_time, xic_int, scan_dot, bin_times, bin_ints, title=N
 
     axes.xaxis.set_major_formatter(ScalarFormatter(useOffset=False, useMathText=True))
 
-    return (zip(xic_time, xic_int) + ([scan_dot] if scan_dot else []),)
+    return (list(zip(xic_time, xic_int)) + ([scan_dot] if scan_dot else []),)
 
 
 def _make_ms2(fig, scan, scan_mode, peptide, labels=None, ion_list = None,
@@ -659,8 +659,8 @@ def _make_ms2(fig, scan, scan_mode, peptide, labels=None, ion_list = None,
                             
 
     if peptide:
-        (x_lbl,y_lbl,lbls) = zip(*[(x1,y1,label_dict[x1])
-                                   for x1,y1 in scan if x1 in label_dict]) or ((),) * 3
+        (x_lbl,y_lbl,lbls) = list(zip(*[(x1,y1,label_dict[x1])
+                                   for x1,y1 in scan if x1 in label_dict])) or ((),) * 3
         if x_lbl:
             axes.scatter(x_lbl, y_lbl, s=5, marker='o', linewidth=0.5, facecolors='w', zorder=2)
 
@@ -796,7 +796,7 @@ def _make_ms2(fig, scan, scan_mode, peptide, labels=None, ion_list = None,
 
     peptide_annotations = [(x,annotations.get(i, None)) for i,x in enumerate(peptide_xes)]
 
-    return zip(x_lbl, y_lbl, lbls), peptide_annotations
+    return list(zip(x_lbl, y_lbl, lbls)), peptide_annotations
 
 
 

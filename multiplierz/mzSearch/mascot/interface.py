@@ -18,16 +18,16 @@
 
 # This module is used to interact with the mascot web interface and parse mascot files
 
-import cStringIO
+import io
 import csv
-import htmlentitydefs
+import html.entities
 import os
 import re
 import tempfile
 import time
 import webbrowser
 
-import urllib2
+import urllib.request, urllib.error, urllib.parse
 
 httpPackage = None
 #try:
@@ -51,7 +51,7 @@ import requests
 #import multiplierz.msparser as ms
 
 from collections import defaultdict
-from urllib import urlencode, unquote
+from urllib.parse import urlencode, unquote
 
 import multiplierz.mass_biochem as mzFunctions
 import multiplierz.mzReport as mzReport
@@ -104,8 +104,8 @@ filetypes = {"MascotDAT" : 'dat',
 import itertools
 import mimetools
 import mimetypes
-from cStringIO import StringIO
-import urllib
+from io import StringIO
+import urllib.request, urllib.parse, urllib.error
 class MultiPartForm(object):
     """Accumulate the data to be used when posting a form."""
 
@@ -190,7 +190,7 @@ class mascot(object):
         os.close(fd)
 
         # Buffer for output
-        self.output = cStringIO.StringIO()
+        self.output = io.StringIO()
         
         self.loginToken = ''
 
@@ -212,14 +212,14 @@ class mascot(object):
                           ('userid', ''),
                           ('onerrdisplay', 'login_prompt')]
                                    
-        req = urllib2.Request(login_url, 
+        req = urllib.request.Request(login_url, 
                               data = urlencode(login_form_seq))
-        f = urllib2.urlopen(req)
+        f = urllib.request.urlopen(req)
         try:
             self.loginToken = f.info()['Set-Cookie']
             # I suppose in this case precise disposition of the output is less important.
         except KeyError:
-            raise RuntimeError, 'Login was not successful; check your username and password.'
+            raise RuntimeError('Login was not successful; check your username and password.')
         
         
         err = None
@@ -250,16 +250,16 @@ class mascot(object):
         """
 
         if not self.logged_in:
-            raise IOError, "Not logged in to Mascot server.  (Call .login() first!)"
+            raise IOError("Not logged in to Mascot server.  (Call .login() first!)")
 
         mascot_id = re.sub(r'^0+', '', str(mascot_id), count=1)
 
         date_url = self.server + r'/x-cgi/ms-review.exe?'
         
-        req = urllib2.Request(date_url + urlencode([('CalledFromForm', '1'),
+        req = urllib.request.Request(date_url + urlencode([('CalledFromForm', '1'),
                                                     ('f0', mascot_id)]))
         req.add_header("Cookie", self.loginToken)
-        f = urllib2.urlopen(req)
+        f = urllib.request.urlopen(req)
         #response.write(f.read())
 
         
@@ -277,7 +277,7 @@ class mascot(object):
         if matches:
             return matches[-1].group(1)
         else:
-            raise RuntimeError, "Search not found in date lookup."
+            raise RuntimeError("Search not found in date lookup.")
         
         
     def download_dat(self, chosen_folder, mascot_id, date=None):
@@ -299,9 +299,9 @@ class mascot(object):
                     'ResJob': dat_file}
         # Adding a Percolator parameter here breaks things!
         
-        req = urllib2.Request(dat_url + urlencode(dat_dict))
+        req = urllib.request.Request(dat_url + urlencode(dat_dict))
         req.add_header("Cookie", self.loginToken)
-        f = urllib2.urlopen(req)
+        f = urllib.request.urlopen(req)
         
         datOut = open(dat_path, 'w')
         datOut.write(f.read())
@@ -393,9 +393,9 @@ class mascot(object):
 
         #self.crl.setopt(pycurl.WRITEFUNCTION, self.output.write)
         
-        req = urllib2.Request(download_url, data = urlencode(download_form_seq))
+        req = urllib.request.Request(download_url, data = urlencode(download_form_seq))
         req.add_header("Cookie", self.loginToken)
-        f = urllib2.urlopen(req)
+        f = urllib.request.urlopen(req)
         
         with open(save_file, 'w') as output:
             output.write(f.read())
@@ -416,7 +416,7 @@ class mascot(object):
         """
 
         if not self.logged_in:
-            raise IOError, "Not logged into to Mascot server."
+            raise IOError("Not logged into to Mascot server.")
 
         mascot_id = str(mascot_id).zfill(6)
 
@@ -424,7 +424,7 @@ class mascot(object):
             date = self.get_date(mascot_id)
 
         if not date:
-            raise IOError, "Couldn't locate file on Mascot server."
+            raise IOError("Couldn't locate file on Mascot server.")
 
         if self.version == '2.1':
             download_url = self.server + r'/cgi/export_dat.pl?'
@@ -469,9 +469,9 @@ class mascot(object):
 
         #self.crl.setopt(pycurl.HTTPGET, True)
         #self.crl.setopt(pycurl.URL, download_url)
-        req = urllib2.Request(download_url, data = urlencode(download_form_seq))
+        req = urllib.request.Request(download_url, data = urlencode(download_form_seq))
         req.add_header("Cookie", self.loginToken)
-        mzidData = urllib2.urlopen(req)
+        mzidData = urllib.request.urlopen(req)
 
         if not save_file:
             save_file = os.path.join(os.getcwd(), "F%s.mzid" % mascot_id)
@@ -571,23 +571,23 @@ class mascot(object):
 
         #Start parsing
         reader = csv.reader(open(input_file, "r"))
-        headers = reader.next()
+        headers = next(reader)
 
         if mascot_var_mods and self.version >= "2.2":
             while (len(headers) == 0 or (headers[0] != "Identifier" and headers[0] != 'prot_hit_num')):
-                headers = reader.next()
+                headers = next(reader)
             if headers[0] != 'prot_hit_num':
-                var_mod = reader.next()
+                var_mod = next(reader)
                 var_mod_dict = {}
                 while len(var_mod) > 0:
                     var_mod_dict[var_mod[0]] = var_mod[1].split('(')[0][:-1]
-                    var_mod = reader.next()
+                    var_mod = next(reader)
                 headers = var_mod
             else:
                 var_mod_dict = None
 
         while len(headers) == 0 or headers[0] != "prot_hit_num":
-            headers = reader.next()
+            headers = next(reader)
 
         #potentially missing protein related entries which may need to be duplicated across rows...
         missing = 10
@@ -677,7 +677,7 @@ class mascot(object):
         scans = []
         try:
             while len(headers) == 0 or headers[0] != "query_number":
-                headers = reader.next()
+                headers = next(reader)
         except StopIteration:
             pass
 
@@ -835,9 +835,9 @@ class mascot(object):
 
         #(coverage, start_end, cov_per) = self.parse_protein_view(response.getvalue())
         
-        req = urllib2.Request(target_url, data = urlencode(form_seq))
+        req = urllib.request.Request(target_url, data = urlencode(form_seq))
         req.add_header("Cookie", self.loginToken)
-        formResponse = urllib2.urlopen(req)
+        formResponse = urllib.request.urlopen(req)
         
         (coverage, start_end, cov_per) = self.parse_protein_view(formResponse.read())
 
@@ -893,9 +893,9 @@ class mascot(object):
 
         #self.crl.setopt(pycurl.WRITEFUNCTION, self.output.write)
         
-        req = urllib2.Request(target_url, data = urlencode(form_seq))
+        req = urllib.request.Request(target_url, data = urlencode(form_seq))
         req.add_header("Cookie", self.loginToken)
-        f = urllib2.urlopen(req)
+        f = urllib.request.urlopen(req)
 
         # escape the pipes in the accession for regex processing
         acc_2 = '\|'.join(acc.split('|'))
@@ -973,9 +973,9 @@ class mascot(object):
 
         #self.crl.perform()
         
-        req = urllib2.Request(target_url, data = urlencode(form_dict))
+        req = urllib.request.Request(target_url, data = urlencode(form_dict))
         req.add_header("Cookie", self.loginToken)
-        f = urllib2.urlopen(req)
+        f = urllib.request.urlopen(req)
 
         #mascot_web_file = response.getvalue().splitlines()
         mascot_web_file = f.read().splitlines()
@@ -997,9 +997,9 @@ class mascot(object):
 
             #self.crl.perform()
             
-            req = urllib2.Request(target_url, data = urlencode(form_dict))
+            req = urllib.request.Request(target_url, data = urlencode(form_dict))
             req.add_header("Cookie", self.loginToken)
-            f = urllib2.urlopen(req)
+            f = urllib.request.urlopen(req)
 
             #mascot_web_file = response.getvalue().splitlines()
             mascot_web_file = f.read().splitlines()
@@ -1016,9 +1016,9 @@ class mascot(object):
             #self.crl.setopt(pycurl.URL, target_url)
             #self.crl.setopt(pycurl.WRITEFUNCTION, fh.write)
             #self.crl.perform()
-            req = urllib2.Request(target_url)
+            req = urllib.request.Request(target_url)
             req.add_header("Cookie", self.loginToken)
-            fh.write(urllib2.urlopen(req).read())
+            fh.write(urllib.request.urlopen(req).read())
             # Honestly, I'd be surprised if this works, or if someone notices it doesn't.
 
         return (text,ionInfo,phosphoPos,oxidPos)
@@ -1214,7 +1214,7 @@ class mascot(object):
         if out and self.verbose:
             out.write(self.output.getvalue())
         elif self.verbose:
-            print self.output.getvalue()
+            print(self.output.getvalue())
 
         self.output.close()
         os.unlink(self.cookie_file_name)
@@ -1370,7 +1370,7 @@ class MascotSearcher(object):
         
         class fieldParser():
             def __init__(self):
-                self.content = cStringIO.StringIO()
+                self.content = io.StringIO()
             def __call__(self, content):
                 self.content.write(content)
             def parse_fields(self):
@@ -1399,7 +1399,7 @@ class MascotSearcher(object):
         fieldDict = fieldParserInstance.parse_fields()
         
         if 'PFA' not in fieldDict:
-            fieldDict['PFA'] = range(0, 9)
+            fieldDict['PFA'] = list(range(0, 9))
         if 'IT_MODS' not in fieldDict:
             fieldDict['IT_MODS'] = fieldDict['MODS']
         
@@ -1437,7 +1437,7 @@ class MascotSearcher(object):
                 dat_file_id = res
                 
         if not dat_file_id:
-            print '\n'.join(rec)
+            print('\n'.join(rec))
                 
         return (dat_file_id,err)     
     
@@ -1447,7 +1447,7 @@ class MascotSearcher(object):
         m2 = re.search(r'.*\[M\d+\]',s)
         if m:
             if self.open_tabs:
-                print "Opening web browser to result page."
+                print("Opening web browser to result page.")
                 webbrowser.open_new_tab(self.server + m.group(1))
             return ('%s:%s' % (m.group(3), m.group(2)))
         elif m2:
@@ -1475,7 +1475,7 @@ class MascotDatFile(object):
         self.res_file = ms.ms_mascotresfile(str(dat_file_path))
 
         if not self.res_file.isValid():
-            print dat_file_path
+            print(dat_file_path)
             errors = []
             for i in range(1, self.res_file.getNumberOfErrors() + 1):
                 errors.append(self.res_file.getErrorString(i))
@@ -1484,7 +1484,7 @@ class MascotDatFile(object):
                 errors.append("\n(Typically this occurs because Mascot couldn't find \n"
                               "the requested search and returned an invalid .DAT file.)")
             
-            raise IOError, "MSParser errors: \n %s" % '\n'.join(errors)
+            raise IOError("MSParser errors: \n %s" % '\n'.join(errors))
         
         self.params = self.res_file.params()
         self.args = kwargs
@@ -1509,7 +1509,7 @@ class MascotDatFile(object):
             msres_flags = msres_flags | ms.ms_mascotresults.MSRES_DECOY
             
         if self.res_file.isErrorTolerant():
-            print "Experimental error-tolerant search results feature!"
+            print("Experimental error-tolerant search results feature!")
             msres_flags = msres_flags | ms.ms_mascotresults.MSRES_INTEGRATED_ERR_TOL
 
         #mspepsumFlags = ms.ms_peptidesummary.MSPEPSUM_PERCOLATOR
@@ -1823,15 +1823,15 @@ def unescape(text):
             # character reference
             try:
                 if text[:3] == "&#x":
-                    return unichr(int(text[3:-1], 16))
+                    return chr(int(text[3:-1], 16))
                 else:
-                    return unichr(int(text[2:-1]))
+                    return chr(int(text[2:-1]))
             except ValueError:
                 pass
         else:
             # named entity
             try:
-                text = unichr(htmlentitydefs.name2codepoint[text[1:-1]])
+                text = chr(html.entities.name2codepoint[text[1:-1]])
             except KeyError:
                 pass
         return text # leave as is

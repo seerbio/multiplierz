@@ -76,7 +76,7 @@ class MultiplierzSettings(object):
                 if line.strip()[0] == '#':
                     continue
                 if '=' not in line:
-                    print "Invalid settings line: %s" % line
+                    print("Invalid settings line: %s" % line)
                     continue
                 
                 field, value = [x.strip() for x in line.split('=')]
@@ -107,7 +107,7 @@ class MultiplierzSettings(object):
         with open(self.file_name, 'w') as file:
             for line in output:
                 file.write(line)
-            for field, value in self.fields.items():
+            for field, value in list(self.fields.items()):
                 if field in seenFields:
                     continue
                 file.write("%s=%s\n" % (field, value))
@@ -284,7 +284,7 @@ class MultiplierzSettings(object):
         #self.set('mascot ion cutoff', controls['ion cutoff'])
         #self.set('mascot bold red', controls['bold red'])
         #self.set('mascot show input query', controls['show input query'])
-        for key, value in controls.items():
+        for key, value in list(controls.items()):
             self.set('mascot ' + key, value)
         self.save()
         

@@ -10,6 +10,7 @@ from collections import defaultdict
 from multiplierz.internalAlgorithms import collectByCriterion
 from numpy import average
 import time
+from functools import reduce
 
 
 
@@ -76,7 +77,7 @@ def searchProcess(targetDir, parfile, mgfs):
                                              user = MASCOT_USERNAME,
                                              password = MASCOT_PASSWORD)
         except Exception as err:
-            print "---------------- Failed on %s" % mgffile
+            print("---------------- Failed on %s" % mgffile)
             raise err
         targetoutput = os.path.join(targetDir, os.path.basename(outputfile))
         os.rename(outputfile, targetoutput)
@@ -118,8 +119,7 @@ def peptideKey(psm):
     the peptide and modification state they represent.
     """
     return (psm['Peptide Sequence'],
-            frozenset(map(lambda y: y.strip(),
-                          psm['Variable Modifications'].split('; '))))
+            frozenset([y.strip() for y in psm['Variable Modifications'].split('; ')]))
 
 def psm_intersection(directory, mode_subdirs):
     """
@@ -140,8 +140,8 @@ def psm_intersection(directory, mode_subdirs):
             conditionPSMs += list(reader(resultfile))
         psmByCondition[subdir] = collectByCriterion(conditionPSMs, peptideKey)
     
-    consistentPSMs = reduce(set.intersection, [set(x.keys()) for x in psmByCondition.values()],
-                            set(psmByCondition.values()[0].keys()))
+    consistentPSMs = reduce(set.intersection, [set(x.keys()) for x in list(psmByCondition.values())],
+                            set(list(psmByCondition.values())[0].keys()))
     
     newSubdirs = []
     for mode, subdir, par in mode_subdirs:
@@ -202,14 +202,14 @@ def psm_XIC_localized(directory, subdirs):
             psmsByPeptide = collectByCriterion(list(rdr),
                                                lambda x: (x['Peptide Sequence'],
                                                           x['Variable Modifications']))
-            for peptide, psms in psmsByPeptide.items():
+            for peptide, psms in list(psmsByPeptide.items()):
                 peptidesForFile[peptide][resultfile] = psms
         
         outputByFile = defaultdict(list)
-        for peptide, psmsByFile in peptidesForFile.items():
+        for peptide, psmsByFile in list(peptidesForFile.items()):
             xicsByFile = []
             
-            allPSMs = sum(psmsByFile.values(), [])
+            allPSMs = sum(list(psmsByFile.values()), [])
             mass = allPSMs[0]['Predicted mr']
             assert len(set(x['Predicted mr'] for x in allPSMs)) == 1
             
@@ -219,7 +219,7 @@ def psm_XIC_localized(directory, subdirs):
                           for x in allScans)
             minRT, maxRT = min(allRTs), max(allRTs)
             
-            for resultfile, psms in psmsByFile.items():
+            for resultfile, psms in list(psmsByFile.items()):
                 rawfile = rawfiles[os.path.basename(resultfile.split('.')[0])]
                 xicInt = 0
                 for charge in charges:
@@ -233,7 +233,7 @@ def psm_XIC_localized(directory, subdirs):
             highIntFile = max(xicsByFile, key = lambda x: x[0])[1]
             outputByFile[highIntFile].append(psmsByFile[highIntFile][0])
         
-        for resultfile, psms in outputByFile.items():
+        for resultfile, psms in list(outputByFile.items()):
             outputfile = resultfile[:-5] + '.XIC_localized.xlsx'
             output = writer(outputfile, columns = columns)
             for psm in psms:
@@ -248,28 +248,28 @@ if __name__ == '__main__':
     time.clock()
     
     mgfs = extractionProcess(directory)
-    print "MGFs extracted: %s" % time.clock()
+    print("MGFs extracted: %s" % time.clock())
     
     
     for mode, subdir, parfile in label_state_subdirs:
         state_dir = os.path.join(directory, subdir)
         parfile = os.path.join(directory, parfile)
         searchProcess(state_dir, parfile, mgfs)
-    print "Searches completed: %s" % time.clock()
+    print("Searches completed: %s" % time.clock())
     
     postProcessingSteps(directory)
-    print "Post-processing completed: %s" % time.clock()
+    print("Post-processing completed: %s" % time.clock())
     
     intersection_subdirs = psm_intersection(directory, label_state_subdirs)
-    print "PSM Intersection report completed: %s" % time.clock()
+    print("PSM Intersection report completed: %s" % time.clock())
     
-    psm_XIC_localized(directory, zip(*intersection_subdirs)[1])
+    psm_XIC_localized(directory, list(zip(*intersection_subdirs))[1])
     
     all_mode_fractions = []
     for mode, subdir in intersection_subdirs:
         mode_dir = os.path.join(directory, subdir)
         files = typeInDir(mode_dir, '.XIC_localized.xlsx')
-        filesWithFraction = map(parseFractionFilename, files)
+        filesWithFraction = list(map(parseFractionFilename, files))
         
         fractionation_plot(filesWithFraction,
                            os.path.join(mode_dir, '%s_fractionation_plot.svg' % mode))
@@ -281,6 +281,6 @@ if __name__ == '__main__':
     
         
     
-    print "Analysis completed: %s" % time.clock()    
+    print("Analysis completed: %s" % time.clock())    
     
-    print "Done!"
+    print("Done!")

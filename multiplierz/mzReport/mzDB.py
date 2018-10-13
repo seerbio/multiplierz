@@ -19,7 +19,7 @@
 import sqlite3
 import os
 import re
-import cPickle
+import pickle
 
 from multiplierz.mzReport import ReportReader, ReportWriter, ReportEntry, default_columns, default_types
 from multiplierz import logger_message
@@ -27,21 +27,21 @@ from multiplierz import logger_message
 
 # SQLite type conversion. The trailing space is for insertion into statements
 sqlite_types = {int: ' INTEGER',
-                long: ' INTEGER',
+                int: ' INTEGER',
                 float: ' REAL',
                 str: ' TEXT',
-                unicode: ' TEXT'}
+                str: ' TEXT'}
 
 # this function converts a scan into a binary blob for sqlite
 # it simply uses Python's pickle functionality.
 def adapt_data(data):
-    return sqlite3.Binary(cPickle.dumps(data, protocol=2))
+    return sqlite3.Binary(pickle.dumps(data, protocol=2))
 
 sqlite3.register_adapter(tuple, adapt_data)
 
 # the function to convert a blob back into a scan, by un-pickling
 def convert_data(data):
-    return cPickle.loads(str(data))
+    return pickle.loads(str(data))
 
 sqlite3.register_converter('pickled', convert_data)
 
@@ -53,7 +53,7 @@ class SQLiteReader(ReportReader):
         if sheet_name and not table_name:
             table_name = sheet_name
         elif sheet_name and table_name and (sheet_name != table_name):
-            raise IOError, "Doubly-specified table name: %s and %s" % (sheet_name, table_name)
+            raise IOError("Doubly-specified table name: %s and %s" % (sheet_name, table_name))
         self.table_name = table_name or 'PeptideData'
 
         if not os.path.exists(file_name):
@@ -141,7 +141,7 @@ class SQLiteWriter(ReportWriter):
         elif len(row) > len(self.columns):
             raise ValueError('Too many values')
         elif isinstance(row,dict):
-            row = dict((k.lower(),v) for k,v in row.items())
+            row = dict((k.lower(),v) for k,v in list(row.items()))
             if not all(k.lower() in row for k in self.columns):
                 raise ValueError('Value dictionary does not match column headers')
 
@@ -180,7 +180,7 @@ class SQLiteWriter(ReportWriter):
             self.conn.execute("INSERT into ImageData values (?,?,?,?)",
                               (self.lastID,column,'image',sqlite3.Binary(open(image,'rb').read())))
         else:
-            raise IndexError, "No row to add an image to"
+            raise IndexError("No row to add an image to")
 
     def close(self):
         self.conn.commit()

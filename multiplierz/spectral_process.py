@@ -1,5 +1,5 @@
 from collections import defaultdict
-from internalAlgorithms import average
+from .internalAlgorithms import average
 from multiplierz import protonMass
 from collections import deque
 from numpy import std
@@ -13,7 +13,7 @@ def centroid(scan, threshold = None):
         return scan
     
     if not threshold:
-        threshold = average(zip(*scan)[1])
+        threshold = average(list(zip(*scan))[1])
         
     peaks = []
     peak = []
@@ -21,7 +21,7 @@ def centroid(scan, threshold = None):
         if pt[1] > threshold:
             peak.append(pt)
         elif peak:
-            centroid = average(zip(*peak)[0], weights = zip(*peak)[1]), max(zip(*peak)[1])
+            centroid = average(list(zip(*peak))[0], weights = list(zip(*peak))[1]), max(list(zip(*peak))[1])
             peaks.append(centroid)
             peak = []
     return peaks
@@ -72,7 +72,7 @@ def peak_pick(scan, tolerance = 0.005, max_charge = 8, min_peaks = 3, correction
 
     if len(scan) > 10000:
         if all([(scan[i+1][0] - scan[i][0]) < 0.3 for i in range(0, 100)]):
-            raise NotImplementedError, "Called scan_features on a profile-mode spectrum."
+            raise NotImplementedError("Called scan_features on a profile-mode spectrum.")
 
     if enforce_isotopic_ratios == True:
         global isotopicRatios
@@ -102,7 +102,7 @@ def peak_pick(scan, tolerance = 0.005, max_charge = 8, min_peaks = 3, correction
         # the expected ratio with the previous intensity in the sequence, it
         # is added to that sequence and the algorithm proceeds to the next
         # point.
-        for chg, chargeSet in activeSets.items():
+        for chg, chargeSet in list(activeSets.items()):
             # Chargeset is ordered by MZ, by construction, so only the first
             # (within-range) expected-point has to be checked.
 
@@ -155,7 +155,7 @@ def peak_pick(scan, tolerance = 0.005, max_charge = 8, min_peaks = 3, correction
         # since their charge is indeterminate, so there's multiple possible-next-MZs.
         # If a point matches to an active point, they're put together in a new 
         # isotopic sequence.
-        for actPt in sorted(activePts.keys(), key = lambda x: x[1], reverse = True):
+        for actPt in sorted(list(activePts.keys()), key = lambda x: x[1], reverse = True):
             if actPt[0] + 1 + tolerance < pmz:
                 del activePts[actPt]
                 unassigned.append(actPt)
@@ -187,14 +187,14 @@ def peak_pick(scan, tolerance = 0.005, max_charge = 8, min_peaks = 3, correction
 
 
     newCorrection = []
-    for charge, things in activeSets.items():
+    for charge, things in list(activeSets.items()):
         for thing in things:
             if len(thing['envelope']) >= min_peaks:
                 envelopes[charge].append(thing['envelope'])
             else:
                 unassigned += thing['envelope']            
 
-    unassigned += activePts.keys()
+    unassigned += list(activePts.keys())
 
 
 
@@ -203,7 +203,7 @@ def peak_pick(scan, tolerance = 0.005, max_charge = 8, min_peaks = 3, correction
     if cleanup:
         unProx = ProximityIndexedSequenceAgain(unassigned, indexer = lambda x: x[0],
                                                dynamic = False)        
-        for charge, chgEnvelopes in envelopes.items():
+        for charge, chgEnvelopes in list(envelopes.items()):
             increment = 1.0/charge
             for envelope in chgEnvelopes:
                 first = min(envelope)
@@ -243,7 +243,7 @@ def deisotope_reduce_scan(spectrum, *peak_pick_args, **peak_pick_kwargs):
     chargeEnvelopes, peaks = peak_pick(spectrum,
                                        *peak_pick_args,
                                        **peak_pick_kwargs)
-    for charge, envelopes in chargeEnvelopes.items():
+    for charge, envelopes in list(chargeEnvelopes.items()):
         for envelope in envelopes:
             mz, ints = envelope[0]
             if charge > 1:
@@ -263,7 +263,7 @@ def deisotope_scan(spectrum, *args, **kwargs):
     """
      
     chargeEnvelopes, peaks = peak_pick(spectrum, *args, **kwargs)
-    for charge, envelopes in chargeEnvelopes.items():
+    for charge, envelopes in list(chargeEnvelopes.items()):
         for envelope in envelopes:
             peaks.append(envelope[0])
     return peaks           
@@ -332,7 +332,7 @@ def mz_range(spectrum, range):
     MZ range.
     """
     
-    if isinstance(range, basestring):
+    if isinstance(range, str):
         start, stop = [int(x) for x in range.split('-')]
     else:
         start, stop = range
