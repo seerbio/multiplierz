@@ -37,7 +37,7 @@ def spectrumDescriptionToMZ(description):
         return float(description.split('-|')[0].split('-')[-1])
     except ValueError:
         return float(description.split("|")[1])
-    
+
 def mzFromPSM(psm):
     if 'Spectrum Description' in psm:
         return spectrumDescriptionToMZ(psm['Spectrum Description'])
@@ -114,9 +114,9 @@ class Feature():
         regionIndices = list(zip(*self.regions))[0]
         self.scans = [absolute_scan_lookup[x] for x in regionIndices]
         self.scanrange = min(self.scans), max(self.scans)
-        
+
         self.regions = [(absolute_scan_lookup[x], y) for x, y in self.regions]
-        
+
         minMZs = [min(list(zip(*peaks))[0]) for y, peaks in self.regions]
         avgC12 = average(minMZs)
         while not all([abs(x - avgC12) < 0.05 for x in minMZs]):
@@ -124,82 +124,82 @@ class Feature():
             minMZs.remove(oddOneOut)
             avgC12 = average(minMZs)
         self.mz = avgC12
-        
+
         xic = pts_to_bins([(x[0], min(x[1], key = lambda pt: (pt[0] - avgC12))[1]) for x in self.regions],
                           100)
-        ints = [0.0] + list(zip(*xic)[1]) + [0.0]
+        ints = [0.0] + list(zip(*xic)) + [0.0]
         self.skewness = skew(ints)
         self.kurtosis = kurtosis(ints)
-        
-        
-  
+
+
+
     def containsPoint(self, mz, scan, charge):
         return (charge == self.charge and abs(mz - self.mz) < featureMatchupTolerance
                 and self.scanrange[0] < scan < self.scanrange[1])
-        
+
     def tidyData(self):
         self.allmzs = sum([[x[0] for x in points] for (index, points) in self.regions], [])
-        
+
     def bordersPoint(self, mz, scan, charge):
         #if not self.scanrange:
             #self.scanrange = min(self.scans) - 1, max(self.scans) + 1
         if not self.allmzs:
             self.allmzs = sum([[x[0] for x in points] for (index, points) in self.regions], [])
-        
+
         #assert not self.containsPoint(mz, scan, charge)
         if self.containsPoint(mz, scan, charge):
             return "Contained."
-        
+
         if charge != self.charge:
             return ""
-        
+
         edge = []
-        
+
         if self.scanrange[0] == scan and abs(mz - self.mz) < 0.05:
             edge.append("Scan before feature")
         if self.scanrange[1] == scan and abs(mz - self.mz) < 0.05:
             edge.append("Scan after feature")
         if any([abs(x - mz) < 0.05 for x in self.allmzs]) and scan in self.scans:
             edge.append("Non-C12 peak")
-        
+
         if edge:
             return '; '.join(edge)
         else:
             return ""
-      
-      
-      
+
+
+
 def setGlobals(constants):
     if 'mzRegex' in constants:
         global spectrumDescriptionToMZ
-        
+
         mzRegCompiled = re.compile(constants['mzRegex'])
-        
+
         def newParser(description):
             return float(mzRegCompiled.search(description).group())
         spectrumDescriptionToMZ = newParser
-        
+
     if 'scanRegex' in constants:
         global spectrumDescriptionToScanNumber
-        
+
         scanRegCompiled = re.compile(constants['scanRegex'])
-        
+
         def newParser(description):
             return float(scanRegCompiled.search(description).group())
-        spectrumDescriptionToScanNumber = newParser 
-    
+        spectrumDescriptionToScanNumber = newParser
+
     #if 'featureTolerance' in constants:
         #global peakFindTolerance
         #peakFindTolerance = constants['featureTolerance']
-    
+
     if 'signalNoiseThreshold' in constants:
         global signalToNoiseThreshold
         signalToNoiseThreshold = constants['signalNoiseThreshold']
-        
-    
-    
-    
-    
+
+
+
+
+
 def getAcqPoints(datafile, resultFile):
     data = mzFile(datafile)
     scans = data.scan_info(0, 999999)
@@ -219,21 +219,21 @@ def getAcqPoints(datafile, resultFile):
             raise Exception("Unidentified scan type of %s" % scan[3])
     for ms2 in ms2s:
         ms2toms1[ms2] = ms1
-        
+
     acqPoints = []
-    for result in resultFile:      
+    for result in resultFile:
         mz = spectrumDescriptionToMZ(result['Spectrum Sescription'])
         scan = spectrumDescriptionToScanNumber(result['Spectrum Description'])
         scan = data.timeForScan(ms2toms1[scan])
-        acqPoints.append((mz, scan))    
-    
+        acqPoints.append((mz, scan))
+
     return acqPoints
-        
-        
+
+
 
 def binByFullFeature(datafile, featureDB, results):
     data = mzFile(datafile)
-    
+
     scans = data.scan_info(0, 999999)
     ms2toms1 = {}
     ms1 = None
@@ -251,8 +251,8 @@ def binByFullFeature(datafile, featureDB, results):
         else:
             raise Exception("Unidentified scan type of %s" % scan[3])
     for ms2 in ms2s:
-        ms2toms1[ms2] = ms1   
-           
+        ms2toms1[ms2] = ms1
+
     matchesToSplits = 0
     matchesToUnsplit = 0
     featureItems = defaultdict(list)
@@ -260,7 +260,7 @@ def binByFullFeature(datafile, featureDB, results):
     inexplicableItems = []
     for result in results:
         #mz = spectrumDescriptionToMZ(result['Spectrum Description'])
-        #scan = spectrumDescriptionToScanNumber(result['Spectrum Description']) 
+        #scan = spectrumDescriptionToScanNumber(result['Spectrum Description'])
         mz = mzFromPSM(result)
         scan = scanFromPSM(result)
         charge = int(result['Charge'])
@@ -268,7 +268,7 @@ def binByFullFeature(datafile, featureDB, results):
             scan = ms2toms1[scan]
         except:
             continue
-        
+
         features = [(i, x) for i, x in featureDB.mz_range(mz - 0.01, mz + 0.01)
                     if x.containsPoint(mz, scan, charge)]
         if features:
@@ -287,26 +287,26 @@ def binByFullFeature(datafile, featureDB, results):
                 scans = min(feature.scans), max(feature.scans)
                 intensity = feature.c12Intensity()
                 kurtosis = feature.kurtosis
-                skew = feature.skewness                
+                skew = feature.skewness
                 edgeItems[index].append((result, edge, scans, intensity, kurtosis, skew))
             else:
                 inexplicableItems.append(result)
-                
-        
-        
+
+
+
     groupedResults = []
     overFitCount = 0
     for feature, results in list(featureItems.items()):
         try:
             pep = results[0][0]['Peptide Sequence']
             if not all([x['Peptide Sequence'] == pep for x, s, i, k, sk in results]):
-                overFitCount += 1            
+                overFitCount += 1
         except KeyError:
             pep = results[0][0]['Annotated Sequence']
             if not all([x['Annotated Sequence'] == pep for x, s, i, k, sk in results]):
-                overFitCount += 1               
+                overFitCount += 1
 
-        
+
         for result, scans, intensity, kurtosis, skew in results:
             result['Feature'] = feature
             result['feature error'] = '-'
@@ -325,7 +325,7 @@ def binByFullFeature(datafile, featureDB, results):
             result['feature start scan'] = scans[0]
             result['feature end scan'] = scans[1]
             result['feature start time'] = data.timeForScan(scans[0]) if scans[0] else '-'
-            result['feature end time'] = data.timeForScan(scans[1]) if scans[1] else '-'    
+            result['feature end time'] = data.timeForScan(scans[1]) if scans[1] else '-'
             result['feature intensity'] = intensity
             result['feature kurtosis'] = kurtosis
             result['feature skewness'] = skew
@@ -344,27 +344,27 @@ def binByFullFeature(datafile, featureDB, results):
 
     data.close()
     return groupedResults
-        
-        
-  
-  
+
+
+
+
 def runSearch(datafile, resultFiles):
     assert datafile.lower().endswith('.raw'), "Only .raw files are currently supported."
-  
-    features = detect_features(datafile)  
-  
+
+    features = detect_features(datafile)
+
 
 def feature_analysis(datafile, resultFiles,
                      featureFile = None,
                      tolerance = None,
                      mzRegex = None, scanRegex = None,
                      **constants):
-    
+
     """
     Performs feature-detection analysis on the given .RAW file and PSM
     reports. The output files group the given PSMs by feature, with the
     addition of source feature extent and intensity information.
-    
+
     """
 
 
@@ -373,45 +373,45 @@ def feature_analysis(datafile, resultFiles,
     if mzRegex:
         import re
         global spectrumDescriptionToMZ
-        
+
         mzRegCompiled = re.compile(mzRegex)
-        
+
         def newParser(description):
             return float(mzRegCompiled.search(description).group())
         spectrumDescriptionToMZ = newParser
-    
+
     if scanRegex:
         import re
         global spectrumDescriptionToScanNumber
-        
+
         scanRegCompiled = re.compile(scanRegex)
-        
+
         def newParser(description):
             return int(scanRegCompiled.search(description).group())
         spectrumDescriptionToScanNumber = newParser
-        
+
     #if tolerance:
         #global peakFindTolerance
         #peakFindTolerance = tolerance
-    
+
     #if signalNoise:
         #global signalToNoiseThreshold
         #signalToNoiseThreshold = signalNoise
-        
-        
+
+
 
 
     assert os.path.exists(datafile), "%s not found!" % datafile
     for resultfile in resultFiles:
         assert os.path.exists(resultfile), "%s not found!" % resultfile
     assert datafile.lower().endswith('.raw'), "Only .raw files are currently supported."
-    
+
     if featureFile:
         assert os.path.exists(featureFile), "Specified feature data file %s not found!" % featureFile
     else:
         featureFile = detect_features(datafile, tolerance = tolerance, **constants)
     features = FeatureInterface(featureFile)
-    
+
     outputfiles = []
     if resultFiles:
         print(resultFiles)
@@ -419,12 +419,12 @@ def feature_analysis(datafile, resultFiles,
         for resultfile in resultFiles:
             resultfile = os.path.abspath(resultfile)
             inputResults = mzReport.reader(resultfile)
-            outputfile = '.'.join(resultfile.split('.')[:-1] + ['featureDetect', 'xlsx']) 
+            outputfile = '.'.join(resultfile.split('.')[:-1] + ['featureDetect', 'xlsx'])
             outputfiles.append(outputfile)
-            
-            
+
+
             resultsByFeature = binByFullFeature(datafile, features, inputResults)
-            
+
             output = mzReport.writer(outputfile,
                                      columns = inputResults.columns + ['Feature',
                                                                        'feature error',
@@ -435,16 +435,16 @@ def feature_analysis(datafile, resultFiles,
                                                                        'feature intensity',
                                                                        'feature kurtosis',
                                                                        'feature skewness'])
-            
+
             for result in resultsByFeature:
                 output.write(result)
-            
+
             output.close()
-            
+
             print("Output saved to %s ." % outputfile)
     else:
         print("No PSM data given; skipping annotation step.")
-        
+
     return featureFile, outputfiles
 
 
@@ -452,11 +452,11 @@ def feature_analysis(datafile, resultFiles,
 def dataReaderProc(datafile, que, scanNumbers):
     try:
         data = mzFile(datafile)
-        
+
         for scanNum in scanNumbers:
             scan = data.scan(scanNum, centroid = True)
             que.put((scanNum, scan), block = True)
-    
+
         que.put('done')
         data.close()
     except Exception as err:
@@ -466,17 +466,17 @@ def dataReaderProc(datafile, que, scanNumbers):
         print('------------------')
         raise err
 
-    
 
 
-    
-    
+
+
+
 def detect_features(datafile, **constants):
     """
     Runs the feature detection algorithm on the target data file (currently,
     only Thermo .RAW is supported.)  Returns the path to the feature data
     file.
-    
+
     Optional arguments:
     - tolerance (default 10): MZ tolerance in parts-per-million for all determinations
     of peak identity.  Should usually correspond to the mass precision of the
@@ -484,13 +484,13 @@ def detect_features(datafile, **constants):
     - force (default False): If True, feature detection is run even if a
     feature data file already exists for the target data.
     """
-    
-    
+
+
     if 'outputfile' in constants:
         featurefile = constants['outputfile']
     else:
         featurefile = datafile + '.features'
-    
+
     if 'tolerance' in constants and constants['tolerance']:
         global tolerance
         tolerance = constants['tolerance']
@@ -498,59 +498,59 @@ def detect_features(datafile, **constants):
             print("\n\n\nWARNING- tolerance value for SILAC analysis should now be in PPM!\n\n\n")
     else:
         tolerance = 10
-        
+
     if 'partial' in constants:
         # This is primarily for testing purposes only.
         scanrange = constants['partial']
     else:
         scanrange = None
-        
+
     if 'force' in constants:
         force = constants['force']
     else:
         force = False
-        
+
     if 'whitelist_psms' in constants:
         whitelist_mzs = constants['whitelist_psms']
         featurefile = datafile + '.partial%s.features' % (str(hash(frozenset(whitelist_mzs)))[:5])
     else:
         whitelist_mzs = None
-        
+
     if 'peak_picking_params' in constants:
         peak_pick_params = constants['peak_picking_params']
     elif 'tolerance' in constants and constants['tolerance']:
         peak_pick_params = {'tolerance':constants['tolerance']}
     else:
         peak_pick_params = {'tolerance' : 10}
-    
+
     if os.path.exists(featurefile) and not force:
         vprint("Feature data file already exists: %s" % featurefile)
         return featurefile
-    
+
     setGlobals(constants)
 
-    
+
     times = []
     times.append(time.clock())
     data = mzFile(datafile)
-    
+
     times.append(time.clock())
     vprint("Opened data file; getting isotopes...")
 
     scaninfo = [x for x in data.scan_info(0, 99999999) if x[3] == 'MS1']
     rtLookup = dict([(x[2], x[0]) for x in scaninfo])
     scaninfo = [x[2] for x in scaninfo]
-    
+
     if scanrange:
         scaninfo = [x for x in scaninfo if scanrange[0] < x < scanrange[1]]
 
     data.close()
-    
+
     que = multiprocessing.Queue(maxsize = 20)
     reader = multiprocessing.Process(target = dataReaderProc,
                                      args = (datafile, que, scaninfo))
     reader.start()
-    
+
     isotopeData = deque()
     thing = que.get(block = True)
     bar = 0
@@ -559,12 +559,12 @@ def detect_features(datafile, **constants):
         foo = time.clock()
         isotopeData.append((scanNum, peak_pick_PPM(scan, **peak_pick_params)[0]))
         bar += time.clock() - foo
-        
+
         thing = que.get(block = True)
-        
+
         if verbose_mode and len(isotopeData) % 100 == 0:
             print(len(isotopeData)) # Shielded by explicit verbose_mode check.
-    
+
     reader.join()
     # Could just discard the un-feature'd peaks immediately.
     vprint("Isotopic features acquired; finding features over time...")
@@ -577,7 +577,7 @@ def detect_features(datafile, **constants):
         ms1ToIndex[scanNum] = index
         indexToMS1[index] = scanNum
 
-            
+
     isotopesByChargePoint = defaultdict(lambda: defaultdict(lambda: ProximityIndexedSequence([], lambda x: x[0][0])))
     allIsotopes = []
     for scanNum, isotopesByCharge in isotopeData:
@@ -586,13 +586,13 @@ def detect_features(datafile, **constants):
             for isoSeq in isotopes:
                 isotopesByChargePoint[charge][scanIndex].add(isoSeq)
                 allIsotopes.append((isoSeq, scanIndex, charge))
-    
+
     del isotopeData
 
     for scanlookup in list(isotopesByChargePoint.values()):
         for proxseq in list(scanlookup.values()):
             proxseq.rebalance()
-            
+
 
     if whitelist_mzs:
         vprint("Screening out irrelevant MZs; starting with %s..." % len(allIsotopes))
@@ -607,32 +607,32 @@ def detect_features(datafile, **constants):
                 whitemz = whitelist_mzs.pop()
             if abs(whitemz - mz) < whitelist_tol:
                 isoAcc.append(iso)
-        
+
         allIsotopes = isoAcc
         vprint("...%s remain." % len(allIsotopes))
-    
-    
-    
-    allIsotopes.sort(key = lambda x: x[0][0][1])
-    
 
-    
-    times.append(time.clock())    
-    
+
+
+    allIsotopes.sort(key = lambda x: x[0][0][1])
+
+
+
+    times.append(time.clock())
+
     seenIsotopes = set()
     # Can assume isotopic sequences are unique because floats.
     # (But it may not be a valid assumption, because detectors
     # and floating point approximations!)
-    
+
     featureList = []
     while allIsotopes:
         highIso, highScan, highChg = allIsotopes.pop()
         if tuple(highIso) in seenIsotopes:
             continue
-        
-        centerIndex, (centerMZ, _) = max(enumerate(highIso), 
+
+        centerIndex, (centerMZ, _) = max(enumerate(highIso),
                                          key = lambda x: x[1][1])
-        
+
         newFeature = [[highScan, highIso]]
         curScan = highScan
         continuing = True
@@ -644,11 +644,11 @@ def detect_features(datafile, **constants):
             except KeyError:
                 assert curScan < max(indexToMS1.keys())
                 break
-            
-            
+
+
             scanSeqs = isotopesByChargePoint[highChg][curScan].returnRange(centerMZ - 2, centerMZ + 1.5)
             scanSeqs.sort(key = lambda x: x[centerIndex][1], reverse = True)
-            
+
             found = False
             for iso in scanSeqs: # These are known to have centerMZ in common.
                 # The indexes between iso and highIso may not be equivalent
@@ -657,19 +657,19 @@ def detect_features(datafile, **constants):
                 # consistent throughout features, but in some cases like
                 # single-scan-dropouts of the C12 this is insufficient
                 # and such discrepancies should be accounted for.
-                
+
                 if (inPPM(tolerance, iso[0][0], highIso[0][0])
                     and inPPM(tolerance, iso[1][0], highIso[1][0])
                     and tuple(iso) not in seenIsotopes):
                     newFeature.append([curScan, iso])
                     found = True
-                    break # From "for iso in scanSeqs"                    
-            
+                    break # From "for iso in scanSeqs"
+
             if found:
                 lastSeen = curRT
             elif abs(curRT - lastSeen) > dropoutTimeTolerance:
                 continuing = False
-        
+
         curScan = highScan
         continuing = True
         lastSeen = rtLookup[indexToMS1[curScan]]
@@ -680,21 +680,21 @@ def detect_features(datafile, **constants):
             except KeyError:
                 assert curScan > max(indexToMS1.keys())
                 break
-            
-            
+
+
             scanSeqs = isotopesByChargePoint[highChg][curScan].returnRange(centerMZ - 2, centerMZ + 1.5)
             scanSeqs.sort(key = lambda x: x[centerIndex][1], reverse = True)
-            
+
             found = False
             for iso in scanSeqs: # These are known to have centerMZ in common.
                 # Ditto.
-                               
+
                 if (inPPM(tolerance, iso[0][0], highIso[0][0])
                     and inPPM(tolerance, iso[1][0], highIso[1][0])
                     and tuple(iso) not in seenIsotopes):
                     newFeature.append([curScan, iso])
                     found = True
-                    break # From "for iso in scanSeqs"                    
+                    break # From "for iso in scanSeqs"
 
             if found:
                 lastSeen = curRT
@@ -703,15 +703,15 @@ def detect_features(datafile, **constants):
 
         if len(newFeature) > 1:
             featureList.append((highChg, newFeature))
-        
+
         for _, iso in newFeature:
             seenIsotopes.add(tuple(iso))
     times.append(time.clock())
-    
+
     for chg, feature in featureList:
         for stage in feature:
             stage[0] = indexToMS1[stage[0]]
-            
+
     class idLookup():
         def __getitem__(self, thing):
             return thing
@@ -725,9 +725,9 @@ def detect_features(datafile, **constants):
         newfeature = Feature()
         for scan, envelope in feature:
             newfeature.add(envelope, scan, chg)
-        
+
         newfeature.calculate_bounds(lookup)
-        
+
         #newfeature.prepareBoxes(lookup)
         #newfeature.prepareBoxes() # It's entirely different, for some reason?
 
@@ -735,15 +735,15 @@ def detect_features(datafile, **constants):
         #for scan, envelope in feature:
             #test.add(envelope, scan, chg)
         #test.calculate_bounds(lookup)
-        
+
         #assert test.mz == newfeature.mz and test.charge == newfeature.charge
-        
+
         featureObjects.append(newfeature)
     save_feature_database(featureObjects, featurefile)
-    
+
     vprint("Saved feature file.")
     times.append(time.clock())
-    
+
     return featurefile
 
 
@@ -752,7 +752,7 @@ def detect_features(datafile, **constants):
 detectFeatures = detect_features
 
 
-    
-    
-    
+
+
+
 # RUNNING FEATURE DETECTION BY USING THIS FILE AS __MAIN__ DOESN'T WORK.
