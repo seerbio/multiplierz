@@ -127,7 +127,7 @@ class Feature():
 
         xic = pts_to_bins([(x[0], min(x[1], key = lambda pt: (pt[0] - avgC12))[1]) for x in self.regions],
                           100)
-        ints = [0.0] + list(zip(*xic)) + [0.0]
+        ints = [0.0] + [x[1] for x in xic] + [0.0]
         self.skewness = skew(ints)
         self.kurtosis = kurtosis(ints)
 
