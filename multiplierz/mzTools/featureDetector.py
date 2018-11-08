@@ -9,7 +9,7 @@ import re
 from multiplierz.internalAlgorithms import ProximityIndexedSequence, inPPM, average, pts_to_bins
 from multiplierz import vprint, verbose_mode
 
-from multiplierz.mzTools.featureUtilities import save_feature_database, FeatureInterface
+from multiplierz.mzTools.featureUtilities import save_feature_database, FeatureInterface, save_feature_csv
 from multiplierz.internalAlgorithms import peak_pick_PPM
 import multiprocessing
 
@@ -739,7 +739,8 @@ def detect_features(datafile, **constants):
         #assert test.mz == newfeature.mz and test.charge == newfeature.charge
 
         featureObjects.append(newfeature)
-    save_feature_database(featureObjects, featurefile)
+    #save_feature_database(featureObjects, featurefile)
+    save_feature_csv(featureObjects, featurefile, datafile)
 
     vprint("Saved feature file.")
     times.append(time.clock())
